@@ -1,7 +1,7 @@
 program example_fft
 
   use fftpack, only: fft, ifft, czt, conv, xcorr, hilbert, filter, &
-                     freq2ind, ind2freq
+                     freq2ind, ind2freq, fftshift, ifftshift
   use forlab, only: disp, ones, loadbin, savebin
 
   implicit none
@@ -69,6 +69,23 @@ program example_fft
   print *; print *, "Convert index to frequency:"
 
   print *, ind2freq(600, 500., 1200)
+
+  ! Shift the Fourier transform
+  !=============================
+  print *; print *, "Shift the Fourier transform:"
+
+  cfft = fft(x, 10)
+  cfft = fftshift(cfft)
+
+  call disp(cfft)
+
+  ! Inverse shift the Fourier transform
+  !=====================================
+  print *; print *, "Inverse shift the Fourier transform:"
+
+  cfft = ifftshift(cfft)
+
+  call disp(cfft)
 
   ! Filter a signal
   !=================

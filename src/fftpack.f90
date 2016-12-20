@@ -10,7 +10,7 @@
 !     PSL - Research University
 !
 ! Last updated
-!     2016-12-14 16:12
+!     2016-12-20 15:22
 !
 ! Functions
 !-----------------------------------------------------------------------
@@ -29,7 +29,7 @@
 !
 !   I
 !   --
-!   -   ifft              -   ind2freq
+!   -   ifft              -   ifftshift         -   ind2freq
 !
 !   X
 !   --
@@ -115,6 +115,15 @@ module fftpack
   end interface ifft
   public :: ifft
   private :: ifft_c8, ifft_c4
+
+  !---------------------------------------------------------------------
+  ! Function ifftshift
+  !---------------------------------------------------------------------
+  interface ifftshift
+    module procedure ifftshift_c8, ifftshift_r8, ifftshift_c4, ifftshift_r4
+  end interface ifftshift
+  public :: ifftshift
+  private :: ifftshift_c8, ifftshift_r8, ifftshift_c4, ifftshift_r4
 
   !---------------------------------------------------------------------
   ! Function ind2freq
@@ -874,6 +883,53 @@ contains
     end if
     return
   end function ifft_c4
+
+!=======================================================================
+! ifftshift
+!-----------------------------------------------------------------------
+! ifftshift shifts zero-frequency component to beginning of spectrum.
+!
+! Syntax
+!-----------------------------------------------------------------------
+! y = ifftshift(x)
+!
+! Description
+!-----------------------------------------------------------------------
+! y = ifftshift(x) returns the asymmetric vector y by moving the zero
+! frequency component of the vector x to the beginning.
+!=======================================================================
+
+  function ifftshift_c8(x)
+    complex(kind = 8), dimension(:), allocatable :: ifftshift_c8
+    complex(kind = 8), dimension(:), intent(in) :: x
+
+    ifftshift_c8 = cshift(x, shift = -ceiling(0.5d0*size(x)))
+    return
+  end function ifftshift_c8
+
+  function ifftshift_r8(x)
+    real(kind = 8), dimension(:), allocatable :: ifftshift_r8
+    real(kind = 8), dimension(:), intent(in) :: x
+
+    ifftshift_r8 = cshift(x, shift = -ceiling(0.5d0*size(x)))
+    return
+  end function ifftshift_r8
+
+  function ifftshift_c4(x)
+    complex(kind = 4), dimension(:), allocatable :: ifftshift_c4
+    complex(kind = 4), dimension(:), intent(in) :: x
+
+    ifftshift_c4 = cshift(x, shift = -ceiling(0.5d0*size(x)))
+    return
+  end function ifftshift_c4
+
+  function ifftshift_r4(x)
+    real(kind = 4), dimension(:), allocatable :: ifftshift_r4
+    real(kind = 4), dimension(:), intent(in) :: x
+
+    ifftshift_r4 = cshift(x, shift = -ceiling(0.5d0*size(x)))
+    return
+  end function ifftshift_r4
 
 !=======================================================================
 ! ind2freq
