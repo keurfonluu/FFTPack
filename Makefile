@@ -1,89 +1,87 @@
-#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-#!  Copyright (c) 2015 by
-#!  Magnitude, France  and  MINES ParisTech, France
-#!  All rights reserved.
-#!
-#!  This software is furnished under a license and may be used and copied
-#!  only in  accordance with  the  terms  of  such  license  and with the
-#!  inclusion of the above copyright notice. This software or  any  other
-#!  copies thereof may not be provided or otherwise made available to any
-#!  other person.  No title to and ownership of  the  software is  hereby
-#!  transferred.
-#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-#
-#         Makefile for Fortran programs
-#
-# ======================================================================
-# Declarations for compiler (comment or decomment as necessary)
-# ======================================================================
-#
-# ---- Gnu complier (gcc)
-FC      :=  gfortran
-#
-# ---- Gnu MPI compiler
-# FC      :=  mpif90
-#
-# flags for debugging or for maximum performance or MPI, comment as necessary
-#
-# ---- Option for gfortran compiler
-#FFLAGS  :=  -Ofast
-#FFLAGS  :=  -O3 -ffree-line-length-none
-#FFLAGS  :=  -O3 -ffree-line-length-none -Wall -Wextra -fbounds-check
-#FFLAGS  :=  -O3 -ffree-line-length-none -cpp -Ddo_mpi
-## gfortran10: Mismatches between actual and dummy argument lists in a single file are now rejected with an error
-## https://github.com/NCAR/ncl/issues/123
-FFLAGS  :=  -O3 -cpp -ffast-math -march=native -funroll-loops -fno-protect-parens -flto -fcheck=all -fallow-argument-mismatch
+# src files list
+src_f90l1 = \
+fftpack.f90 \
+fftpack5.f90 \
+forlab.f90
 
-#
-# ======================================================================
-# Declarations of executables to be compiled and various dependances
-# ======================================================================
-# Name of executable
-TARGET  :=  example_fft.exe
+src_f90l2 = \
+example_fft.f90
 
-# Directories
-SRCDIR  :=  src
-OBJDIR  :=  obj
-MAIN    :=  $(SRCDIR)
+# obj files list
+obj_f90l1 = \
+fftpack.o \
+fftpack5.o \
+forlab.o
 
-# Link objects to create executable (tab required on second line)
-OBJS    :=  $(OBJDIR)/forlab.o \
-            $(OBJDIR)/fftpack5.o \
-            $(OBJDIR)/fftpack.o \
-            $(OBJDIR)/example_fft.o
+obj_f90l2 = \
+example_fft.o
 
-# These routines depend on include file - recompile if include modified
+# src files dir
+src_f90d1 = ./src/
+src_f90d2 = ./test/
 
-ALL     :=  $(TARGET)
-all: $(ALL)
+# obj files dir
+obj_dir = ./obj/example_fft/
 
-# ======================================================================
-# General rules, these should not require modification
-# General rules for building ".o" objects from fortran programs or subroutines
-# ======================================================================
+# exe file dir/name
+exe_dir = ./bin/
+exe = example_fft
 
-$(OBJDIR):
-	mkdir -p $(OBJDIR)
+# lib files
+idir = 
+ldir = 
+libs =
 
-$(OBJDIR)/fftpack5.o: $(MAIN)/fftpack5.f90 | $(OBJDIR)
-	$(FC) $(FFLAGS) -w -c $^ -o $@ -J$(OBJDIR)
+# examples
+example_dir = ./example/
 
-$(OBJDIR)/%.o: $(MAIN)/%.f90 | $(OBJDIR)
-	$(FC) $(FFLAGS) -c $^ -o $@ -J$(OBJDIR)
+# make configuration
+VPATH = $(src_f90d1):$(src_f90d2):$(obj_dir)
+objs = $(addprefix $(obj_dir), $(obj_f90l1) $(obj_f90l2))
 
-$(TARGET): $(OBJS)
-	$(FC) $(FFLAGS) -o $@ $(OBJS)
+# compiler tools
+fc = gcc
+ld = gfortran
+fflag = -o3 -cpp -ffast-math -march=native -funroll-loops -fno-protect-parens -flto -fcheck=all -fallow-argument-mismatch \
+-Wl, -J$(obj_dir) $(idir)
+lflag = 
 
-# Utilities
+# targets
+all: $(exe)
 
-.PHONY: all clean veryclean
+$(exe): $(obj_f90l1) $(obj_f90l2)
+	@mkdir -p $(exe_dir)
+	$(ld) -o $(exe_dir)$(exe) $(objs) $(lflag) $(libs) $(ldir)
+	
+$(obj_f90l1):
+	@mkdir -p $(obj_dir)
+	$(fc) $(fflag) -c $(src_f90d1)$(@:.o=.f90) -o $(obj_dir)$@
 
+$(obj_f90l2):
+	@mkdir -p $(obj_dir)
+	$(fc) $(fflag) -c $(src_f90d2)$(@:.o=.f90) -o $(obj_dir)$@
+	
+.PHONY: clean, test
 clean:
-	rm -rf $(ALL) $(OBJDIR)
+	rm -f $(obj_dir)*.*
+	rm -f $(exe_dir)$(exe)
 
-veryclean:
-	rm -rf $(ALL) $(OBJDIR)
+test:
+	@mkdir -p $(example_dir)
+	cd $(example_dir); ../$(exe_dir)$(exe)
+	
+# dependencies of files
+example_fft.o: \
+example_fft.f90 \
+forlab.o \
+fftpack.o \
+fftpack5.o
 
-# ======================================================================
-# That's all
-# ======================================================================
+fftpack.o: \
+fftpack.f90
+
+fftpack5.o: \
+fftpack5.f90
+
+forlab.o: \
+forlab.f90
