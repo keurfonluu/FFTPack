@@ -3,9 +3,9 @@ FFTPack aims to provide an easily usable package of functions using FFTPack libr
 
 ## Two libraries
 This repo contains two libraries:
-1. FFTpack library
-   contains FFT functions.
-2. Forlab library
+1. FFTpack library  
+   Contains FFT functions.
+2. Forlab library  
    Forlab is a Fortran module that provides a lot of functions for scientific computing 
    mostly inspired by Matlab and Python's package NumPy.
 
