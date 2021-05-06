@@ -9,141 +9,17 @@
 !     MINES ParisTech - Centre de Géosciences
 !     PSL - Research University
 !
-! Last updated
-!     2016-12-14 16:11
-!
-! Objects
-!-----------------------------------------------------------------------
-! File
-!   * Attributes
-!       -   unit
-!       -   filename
-!   * Methods
-!       -   open
-!       -   close
-!       -   countlines
-!
-! Functions
-!-----------------------------------------------------------------------
-!   A
-!   --
-!   -   acosd             -   asind             -   atand
-!   -   argmax            -   argmin            -   argsort
-!   -   arange            -   angle
-!
-!   B
-!   --
-!   -   bsplrep1          -   bsplrep2          -   bspline1
-!   -   bspline2
-!
-!   C
-!   --
-!   -   chol              -   cosd              -   countlines
-!   -   cov               -   cumsum
-!
-!   D
-!   --
-!   -   det               -   diag              -   disp
-!   -   deg2utm           -   datenum           -   datevec
-!   -   datestr           -   deboor            -   diff
-!
-!   E
-!   --
-!   -   eye               -   eig
-!
-!   F
-!   --
-!   -   File              -   find              -   flip
-!   -   fliplr            -   flipud            -   fminbnd
-!
-!   H
-!   --
-!   -   horzcat           -   hann
-!
-!   I
-!   --
-!   -   interp1           -   interp2           -   interp3
-!   -   inv               -   ismember          -   isoutlier
-!   -   issquare          -   isleap            -   issymmetric
-!
-!   K
-!   --
-!   -   kurtosis          -   k2test            -   ksdensity
-!
-!   L
-!   --
-!   -   loadtxt           -   loadbin           -   linspace
-!   -   lsweight          -   lu                -   log2
-!
-!   M
-!   --
-!   -   mean              -   median            -   mad
-!   -   meshgrid
-!
-!   N
-!   --
-!   -   nextpow2          -   norm              -   normpdf
-!   -   num2str
-!
-!   O
-!   --
-!   -   ones
-!
-!   P
-!   --
-!   -   pascal            -   prctile
-!
-!   R
-!   --
-!   -   rng               -   randu             -   randn
-!   -   randi             -   randperm          -   repmat
-!   -   rms
-!
-!   S
-!   --
-!   -   savetxt           -   savebin           -   sind
-!   -   sort              -   solve             -   svd
-!   -   svdsolve          -   std               -   spline1
-!   -   spline2           -   skewness          -   signum
-!
-!   T
-!   --
-!   -   tand              -   tic / toc         -   trace
-!   -   tril              -   triu
-!
-!   U
-!   --
-!   -   utm2deg
-!
-!   V
-!   --
-!   -   vertcat           -   var
-!
-!   Z
-!   --
-!   -   zeros
-!
-! TODO
-!-----------------------------------------------------------------------
-! Bilinear interpolation on irregular grid by mapping physical grid
-! to logical grid:
-! https://www.particleincell.com/2012/quad-interpolation/
-!
-! Apply this algorithm to bspline2 to interpolate the B-spline surface
-! using the true B-spline representation (full x and y coordinates).
-!
-! Warning
+! Notes
 !-----------------------------------------------------------------------
 ! When changing precision (IPRE and/or RPRE), the whole program needs to
 ! be recompiled.
-!
-! If used with MPI, the variable MPI_RPRE has to correspond to the
-! variable RPRE:
-!   -   if RPRE = 4 (simple precision), MPI_RPRE = 13 (MPI_REAL)
-!   -   if RPRE = 8 (double precision), MPI_RPRE = 46 (MPI_DOUBLE)
 !=======================================================================
 
 module forlab
+
+#ifdef do_mpi
+  use mpi
+#endif
 
   implicit none
 
@@ -151,12 +27,33 @@ module forlab
 ! Parameters
 !=======================================================================
 
-  integer, parameter :: IPRE = 4
-  integer, parameter :: RPRE = 8
-  integer, parameter :: MPI_RPRE = 13
-  integer, parameter :: CLEN = 512
-  real(kind = 8), parameter :: pi = 3.141592653589793238460d0
-  real(kind = 8), save :: tic_time
+  integer, public, parameter :: IPRE = 4
+  integer, public, parameter :: RPRE = 8
+  integer, public, parameter :: CLEN = 512
+  real(kind = 8), public, parameter :: pi = 3.141592653589793238460d0
+  real(kind = 8), public, save :: tic_time
+
+!=======================================================================
+! Functions
+!=======================================================================
+
+  private
+  public :: File, acosd, asind, atand, argmax, argmin, argsort, arange, &
+    angle, bsplrep1, bsplrep2, bspline1, bspline2, chol, cosd, countlines, &
+    cov, cumsum, chi2cdf, chi2pdf, chi2inv, chi2rand, check_directory, &
+    det, diag, disp, deg2utm, datenum, datevec, datestr, deboor, diff, &
+    eye, eig, find, flip, fliplr, flipud, fminbnd, gammainc, horzcat, &
+    hann, interp1, interp2, interp3, inv, ismember, isoutlier, issquare, &
+    isleap, issymmetric, kurtosis, k2test, kde, loadtxt, loadbin, linspace, &
+    mean, median, mad, meshgrid, nextpow2, norm, normpdf, num2str, ones, &
+    outer, pascal, prctile, progress_bar, progress_perc, rng, randu, randn, &
+    randi, randperm, repmat, rms, savetxt, savebin, sind, sort, solve, &
+    svd, svdsolve, std, spline1, spline2, skewness, signum, sinc, &
+    split_argument, tand, tic, toc, trace, tril, triu, utm2deg, vertcat, &
+    var, zeros, dbindex, gmm, kmeans, mbkmeans, silhouette
+#ifdef do_mpi
+  public :: mpi_rpre
+#endif
 
 !=======================================================================
 ! Object File
@@ -166,11 +63,11 @@ module forlab
     integer(kind = IPRE) :: unit
     character(len = CLEN) :: filename
   contains
-    generic, public :: open => open1, open2
-    procedure, private :: open1, open2
+    procedure, private :: open1, open2, countlines1, file_exist
     procedure, public :: close
+    generic, public :: open => open1, open2
     generic, public :: countlines => countlines1
-    procedure, private :: countlines1
+    generic, public :: exist => file_exist
   end type File
 
 !=======================================================================
@@ -178,10 +75,10 @@ module forlab
 !=======================================================================
 
   abstract interface
-    real(kind = RPRE) function func(x)
+    real(kind = RPRE) function func1d(x)
       import :: RPRE
       real(kind = RPRE), intent(in) :: x
-    end function func
+    end function func1d
   end interface
 
 !=======================================================================
@@ -194,8 +91,6 @@ module forlab
   interface acosd
     module procedure acosd0, acosd1, acosd2, acosd3
   end interface acosd
-  public :: acosd
-  private :: acosd0, acosd1, acosd2, acosd3
 
   !---------------------------------------------------------------------
   ! Function angle
@@ -203,8 +98,6 @@ module forlab
   interface angle
     module procedure angle0, angle1
   end interface angle
-  public :: angle
-  private :: angle0, angle1
 
   !---------------------------------------------------------------------
   ! Function argmax
@@ -212,8 +105,6 @@ module forlab
   interface argmax
     module procedure argmax1, argmax2, argmax3
   end interface argmax
-  public :: argmax
-  private :: argmax1, argmax2, argmax3
 
   !---------------------------------------------------------------------
   ! Function argmin
@@ -221,8 +112,6 @@ module forlab
   interface argmin
     module procedure argmin1, argmin2, argmin3
   end interface argmin
-  public :: argmin
-  private :: argmin1, argmin2, argmin3
 
   !---------------------------------------------------------------------
   ! Function asind
@@ -230,8 +119,6 @@ module forlab
   interface asind
     module procedure asind0, asind1, asind2, asind3
   end interface asind
-  public :: asind
-  private :: asind0, asind1, asind2, asind3
 
   !---------------------------------------------------------------------
   ! Function atand
@@ -239,8 +126,6 @@ module forlab
   interface atand
     module procedure atand0, atand1, atand2, atand3
   end interface atand
-  public :: atand
-  private :: atand0, atand1, atand2, atand3
 
   !---------------------------------------------------------------------
   ! Function bspline1
@@ -248,17 +133,41 @@ module forlab
   interface bspline1
     module procedure bspline1_1
   end interface bspline1
-  public :: bspline1
-  private :: bspline1_1
 
   !---------------------------------------------------------------------
   ! Function bspline2
   !---------------------------------------------------------------------
   interface bspline2
-    module procedure bspline2_1, bspline2_2
+    module procedure bspline2_2
   end interface bspline2
-  public :: bspline2
-  private :: bspline2_1, bspline2_2
+
+  !---------------------------------------------------------------------
+  ! Function chi2cdf
+  !---------------------------------------------------------------------
+  interface chi2cdf
+    module procedure chi2cdf0, chi2cdf1_0, chi2cdf1_1
+  end interface chi2cdf
+
+  !---------------------------------------------------------------------
+  ! Function chi2inv
+  !---------------------------------------------------------------------
+  interface chi2inv
+    module procedure chi2inv0, chi2inv1_0, chi2inv1_1
+  end interface chi2inv
+
+  !---------------------------------------------------------------------
+  ! Function chi2pdf
+  !---------------------------------------------------------------------
+  interface chi2pdf
+    module procedure chi2pdf0, chi2pdf1_0, chi2pdf1_1
+  end interface chi2pdf
+
+  !---------------------------------------------------------------------
+  ! Function chi2rand
+  !---------------------------------------------------------------------
+  interface chi2rand
+    module procedure chi2rand0, chi2rand1
+  end interface chi2rand
 
   !---------------------------------------------------------------------
   ! Function cosd
@@ -266,8 +175,6 @@ module forlab
   interface cosd
     module procedure cosd0, cosd1, cosd2, cosd3
   end interface cosd
-  public :: cosd
-  private :: cosd0, cosd1, cosd2, cosd3
 
   !---------------------------------------------------------------------
   ! Function countlines
@@ -275,8 +182,6 @@ module forlab
   interface countlines
     module procedure countlines2
   end interface countlines
-  public :: countlines
-  private :: countlines2
 
   !---------------------------------------------------------------------
   ! Function cov
@@ -284,8 +189,6 @@ module forlab
   interface cov
     module procedure cov1_1, cov1_2, cov2_1, cov2_2
   end interface cov
-  public :: cov
-  private :: cov1_1, cov1_2, cov2_1, cov2_2
 
   !---------------------------------------------------------------------
   ! Function cumsum
@@ -293,8 +196,6 @@ module forlab
   interface cumsum
     module procedure cumsum1, cumsum2
   end interface cumsum
-  public :: cumsum
-  private :: cumsum1, cumsum2
 
   !---------------------------------------------------------------------
   ! Function datenum
@@ -302,8 +203,6 @@ module forlab
   interface datenum
     module procedure datenum0
   end interface datenum
-  public :: datenum
-  private :: datenum0
 
   !---------------------------------------------------------------------
   ! Function datestr
@@ -311,8 +210,6 @@ module forlab
   interface datestr
     module procedure datestr0_0
   end interface datestr
-  public :: datestr
-  private :: datestr0_0
 
   !---------------------------------------------------------------------
   ! Function datevec
@@ -320,8 +217,13 @@ module forlab
   interface datevec
     module procedure datevec0
   end interface datevec
-  public :: datevec
-  private :: datevec0
+
+  !---------------------------------------------------------------------
+  ! Function dbindex
+  !---------------------------------------------------------------------
+  interface dbindex
+    module procedure dbindex1, dbindex2
+  end interface dbindex
 
   !---------------------------------------------------------------------
   ! Function deg2utm
@@ -329,8 +231,6 @@ module forlab
   interface deg2utm
     module procedure deg2utm0, deg2utm1
   end interface deg2utm
-  public :: deg2utm
-  private :: deg2utm0, deg2utm1
 
   !---------------------------------------------------------------------
   ! Function diag
@@ -338,8 +238,6 @@ module forlab
   interface diag
     module procedure diag1, diag2
   end interface diag
-  public :: diag
-  private :: diag1, diag2
 
   !---------------------------------------------------------------------
   ! Function diff
@@ -347,8 +245,6 @@ module forlab
   interface diff
     module procedure diff1, diff2
   end interface diff
-  public :: diff
-  private :: diff1, diff2
 
   !---------------------------------------------------------------------
   ! Subroutine disp
@@ -357,9 +253,6 @@ module forlab
     module procedure disp_i0, disp_r0, disp_c0, disp_i1, disp_r1, &
       disp_c1, disp_i2, disp_r2, disp_i3, disp_r3
   end interface disp
-  public :: disp
-  private :: disp_i0, disp_r0, disp_c0, disp_i1, disp_r1, disp_c1, &
-      disp_i2, disp_r2, disp_i3, disp_r3
 
   !---------------------------------------------------------------------
   ! Function File
@@ -367,8 +260,6 @@ module forlab
   interface File
     module procedure init_File
   end interface File
-  public :: File
-  private :: init_File
 
   !---------------------------------------------------------------------
   ! Function find
@@ -376,8 +267,6 @@ module forlab
   interface find
     module procedure find1, find2, find3
   end interface find
-  public :: find
-  private :: find1, find2, find3
 
   !---------------------------------------------------------------------
   ! Function flip
@@ -386,8 +275,6 @@ module forlab
     module procedure flip_i1, flip_r1, flip_i2, flip_r2, flip_i3, &
       flip_r3
   end interface flip
-  public :: flip
-  private :: flip_i1, flip_r1, flip_i2, flip_r2, flip_i3, flip_r3
 
   !---------------------------------------------------------------------
   ! Function flipud
@@ -395,8 +282,6 @@ module forlab
   interface flipud
     module procedure flipud_i1, flipud_r1, flipud_i2, flipud_r2
   end interface flipud
-  public :: flipud
-  private :: flipud_i1, flipud_r1, flipud_i2, flipud_r2
 
   !---------------------------------------------------------------------
   ! Function fliplr
@@ -404,8 +289,20 @@ module forlab
   interface fliplr
     module procedure fliplr_i1, fliplr_r1, fliplr_i2, fliplr_r2
   end interface fliplr
-  public :: fliplr
-  private :: fliplr_i1, fliplr_r1, fliplr_i2, fliplr_r2
+
+  !---------------------------------------------------------------------
+  ! Function gammainc
+  !---------------------------------------------------------------------
+  interface gammainc
+    module procedure gammainc0, gammainc1_0
+  end interface gammainc
+
+  !---------------------------------------------------------------------
+  ! Function gmm
+  !---------------------------------------------------------------------
+  interface gmm
+    module procedure gmm1, gmm2
+  end interface gmm
 
   !---------------------------------------------------------------------
   ! Function horzcat
@@ -414,9 +311,6 @@ module forlab
     module procedure horzcat_i1, horzcat_r1, horzcat_i2, horzcat_r2, horzcat_i12, &
       horzcat_r12, horzcat_i21, horzcat_r21
   end interface horzcat
-  public :: horzcat
-  private :: horzcat_i1, horzcat_r1, horzcat_i2, horzcat_r2, horzcat_i12, &
-    horzcat_r12, horzcat_i21, horzcat_r21
 
   !---------------------------------------------------------------------
   ! Function interp1
@@ -424,8 +318,6 @@ module forlab
   interface interp1
     module procedure interp1_0, interp1_1
   end interface interp1
-  public :: interp1
-  private :: interp1_0, interp1_1
 
   !---------------------------------------------------------------------
   ! Function interp2
@@ -433,8 +325,6 @@ module forlab
   interface interp2
     module procedure interp2_0, interp2_1, interp2_2
   end interface interp2
-  public :: interp2
-  private :: interp2_0, interp2_1, interp2_2
 
   !---------------------------------------------------------------------
   ! Function interp3
@@ -442,8 +332,6 @@ module forlab
   interface interp3
     module procedure interp3_0, interp3_1
   end interface interp3
-  public :: interp3
-  private :: interp3_0, interp3_1
 
   !---------------------------------------------------------------------
   ! Function ismember
@@ -454,20 +342,20 @@ module forlab
       ismember_r0r1, ismember_r0i2, ismember_r0r2, ismember_r0i3, &
       ismember_r0r3
   end interface ismember
-  public :: ismember
-  private :: ismember_i0i1, ismember_i0r1, ismember_i0i2, &
-    ismember_i0r2, ismember_i0i3, ismember_i0r3, ismember_r0i1, &
-    ismember_r0r1, ismember_r0i2, ismember_r0r2, ismember_r0i3, &
-    ismember_r0r3
 
   !---------------------------------------------------------------------
-  ! Function ksdensity
+  ! Function kde
   !---------------------------------------------------------------------
-  interface ksdensity
-    module procedure ksdensity1
-  end interface ksdensity
-  public :: ksdensity
-  private :: ksdensity1
+  interface kde
+    module procedure kde1, kde2
+  end interface kde
+
+  !---------------------------------------------------------------------
+  ! Function kmeans
+  !---------------------------------------------------------------------
+  interface kmeans
+    module procedure kmeans1, kmeans2
+  end interface kmeans
 
   !---------------------------------------------------------------------
   ! Function kurtosis
@@ -475,8 +363,6 @@ module forlab
   interface kurtosis
     module procedure kurtosis1, kurtosis2
   end interface kurtosis
-  public :: kurtosis
-  private :: kurtosis1, kurtosis2
 
   !---------------------------------------------------------------------
   ! Function linspace
@@ -485,9 +371,6 @@ module forlab
     module procedure linspace_r8r8, linspace_r4r4, linspace_i4i4, &
       linspace_r8i4, linspace_r4i4, linspace_i4r8, linspace_i4r4
   end interface linspace
-  public :: linspace
-  private :: linspace_r8r8, linspace_r4r4, linspace_i4i4, &
-    linspace_r8i4, linspace_r4i4, linspace_i4r8, linspace_i4r4
 
   !---------------------------------------------------------------------
   ! Function loadbin
@@ -495,8 +378,6 @@ module forlab
   interface loadbin
     module procedure loadbin0, loadbin1, loadbin2, loadbin3
   end interface loadbin
-  public :: loadbin
-  private :: loadbin0, loadbin1, loadbin2, loadbin3
 
   !---------------------------------------------------------------------
   ! Function loadtxt
@@ -504,8 +385,6 @@ module forlab
   interface loadtxt
     module procedure loadtxt1, loadtxt2
   end interface loadtxt
-  public :: loadtxt
-  private :: loadtxt1, loadtxt2
 
   !---------------------------------------------------------------------
   ! Function log2
@@ -513,8 +392,6 @@ module forlab
   interface log2
     module procedure log2_i0, log2_r0, log2_i1, log2_r1
   end interface log2
-  public :: log2
-  private :: log2_i0, log2_r0, log2_i1, log2_r1
 
   !---------------------------------------------------------------------
   ! Function mad
@@ -522,8 +399,13 @@ module forlab
   interface mad
     module procedure mad1, mad2
   end interface mad
-  public :: mad
-  private :: mad1, mad2
+
+  !---------------------------------------------------------------------
+  ! Function mbkmeans
+  !---------------------------------------------------------------------
+  interface mbkmeans
+    module procedure mbkmeans1, mbkmeans2
+  end interface mbkmeans
 
   !---------------------------------------------------------------------
   ! Function median
@@ -531,8 +413,6 @@ module forlab
   interface median
     module procedure median1, median2
   end interface median
-  public :: median
-  private :: median1, median2
 
   !---------------------------------------------------------------------
   ! Function mean
@@ -540,8 +420,6 @@ module forlab
   interface mean
     module procedure mean1, mean2
   end interface mean
-  public :: mean
-  private :: mean1, mean2
 
   !---------------------------------------------------------------------
   ! Subroutine meshgrid
@@ -549,8 +427,6 @@ module forlab
   interface meshgrid
     module procedure meshgrid2
   end interface meshgrid
-  public :: meshgrid
-  private :: meshgrid2
 
   !---------------------------------------------------------------------
   ! Function nextpow2
@@ -558,8 +434,6 @@ module forlab
   interface nextpow2
     module procedure nextpow2_0, nextpow2_1
   end interface nextpow2
-  public :: nextpow2
-  private :: nextpow2_0, nextpow2_1
 
   !---------------------------------------------------------------------
   ! Function norm
@@ -567,8 +441,6 @@ module forlab
   interface norm
     module procedure norm1, norm2
   end interface norm
-  public :: norm
-  private :: norm1, norm2
 
   !---------------------------------------------------------------------
   ! Function normpdf
@@ -576,8 +448,6 @@ module forlab
   interface normpdf
     module procedure normpdf0, normpdf1, normpdf2
   end interface normpdf
-  public :: normpdf
-  private :: normpdf0, normpdf1, normpdf2
 
   !---------------------------------------------------------------------
   ! Function num2str
@@ -585,8 +455,6 @@ module forlab
   interface num2str
     module procedure num2str_i4, num2str_i8, num2str_r4, num2str_r8
   end interface num2str
-  public :: num2str
-  private :: num2str_i4, num2str_i8, num2str_r4, num2str_r8
 
   !---------------------------------------------------------------------
   ! Function ones
@@ -594,8 +462,6 @@ module forlab
   interface ones
     module procedure ones1, ones2, ones3
   end interface ones
-  public :: ones
-  private :: ones1, ones2, ones3
 
   !---------------------------------------------------------------------
   ! Function prctile
@@ -603,8 +469,6 @@ module forlab
   interface prctile
     module procedure prctile0, prctile1
   end interface prctile
-  public :: prctile
-  private :: prctile0, prctile1
 
   !---------------------------------------------------------------------
   ! Function randi
@@ -613,9 +477,6 @@ module forlab
     module procedure randi0_0, randi0_1, randi1_0, randi1_1, randi2_0, &
       randi2_1, randi3_0, randi3_1
   end interface randi
-  public :: randi
-  private :: randi0_0, randi0_1, randi1_0, randi1_1, randi2_0, randi2_1, &
-    randi3_0, randi3_1
 
   !---------------------------------------------------------------------
   ! Function randu
@@ -623,8 +484,6 @@ module forlab
   interface randu
     module procedure randu0, randu1, randu2, randu3
   end interface randu
-  public :: randu
-  private :: randu0, randu1, randu2, randu3
 
   !---------------------------------------------------------------------
   ! Function randn
@@ -632,8 +491,6 @@ module forlab
   interface randn
     module procedure randn0, randn1, randn2, randn3
   end interface randn
-  public :: randn
-  private :: randn0, randn1, randn2, randn3
 
   !---------------------------------------------------------------------
   ! Function repmat
@@ -641,8 +498,6 @@ module forlab
   interface repmat
     module procedure repmat1, repmat2
   end interface repmat
-  public :: repmat
-  private :: repmat1, repmat2
 
   !---------------------------------------------------------------------
   ! Function rms
@@ -650,8 +505,6 @@ module forlab
   interface rms
     module procedure rms1, rms2
   end interface rms
-  public :: rms
-  private :: rms1, rms2
 
   !---------------------------------------------------------------------
   ! Subroutine savebin
@@ -660,9 +513,6 @@ module forlab
     module procedure savebin1_r4, savebin1_r8, savebin2_r4, savebin2_r8, &
       savebin3_r4, savebin3_r8
   end interface savebin
-  public :: savebin
-  private :: savebin1_r4, savebin1_r8, savebin2_r4, savebin2_r8, &
-    savebin3_r4, savebin3_r8
 
   !---------------------------------------------------------------------
   ! Subroutine savetxt
@@ -671,9 +521,6 @@ module forlab
     module procedure savetxt1_i4, savetxt1_r4, savetxt1_i8, savetxt1_r8, &
       savetxt2_i4, savetxt2_r4, savetxt2_i8, savetxt2_r8
   end interface savetxt
-  public :: savetxt
-  private :: savetxt1_i4, savetxt1_r4, savetxt1_i8, savetxt1_r8, &
-      savetxt2_i4, savetxt2_r4, savetxt2_i8, savetxt2_r8
 
   !---------------------------------------------------------------------
   ! Function signum
@@ -681,8 +528,20 @@ module forlab
   interface signum
     module procedure signum0, signum1, signum2
   end interface signum
-  public :: signum
-  private :: signum0, signum1, signum2
+
+  !---------------------------------------------------------------------
+  ! Function sinc
+  !---------------------------------------------------------------------
+  interface sinc
+    module procedure sinc0, sinc1
+  end interface sinc
+
+  !---------------------------------------------------------------------
+  ! Function silhouette
+  !---------------------------------------------------------------------
+  interface silhouette
+    module procedure silhouette1, silhouette2
+  end interface silhouette
 
   !---------------------------------------------------------------------
   ! Function sind
@@ -690,8 +549,6 @@ module forlab
   interface sind
     module procedure sind0, sind1, sind2, sind3
   end interface sind
-  public :: sind
-  private :: sind0, sind1, sind2, sind3
 
   !---------------------------------------------------------------------
   ! Function skewness
@@ -699,8 +556,6 @@ module forlab
   interface skewness
     module procedure skewness1, skewness2
   end interface skewness
-  public :: skewness
-  private :: skewness1, skewness2
 
   !---------------------------------------------------------------------
   ! Function spline1
@@ -708,8 +563,6 @@ module forlab
   interface spline1
     module procedure spline1_0, spline1_1
   end interface spline1
-  public :: spline1
-  private :: spline1_0, spline1_1
 
   !---------------------------------------------------------------------
   ! Function spline2
@@ -717,8 +570,6 @@ module forlab
   interface spline2
     module procedure spline2_1, spline2_2
   end interface spline2
-  public :: spline2
-  private :: spline2_1, spline2_2
 
   !---------------------------------------------------------------------
   ! Function std
@@ -726,8 +577,6 @@ module forlab
   interface std
     module procedure std1, std2
   end interface std
-  public :: std
-  private :: std1, std2
 
   !---------------------------------------------------------------------
   ! Function tand
@@ -735,8 +584,6 @@ module forlab
   interface tand
     module procedure tand0, tand1, tand2, tand3
   end interface tand
-  public :: tand
-  private :: tand0, tand1, tand2, tand3
 
   !---------------------------------------------------------------------
   ! Function tril
@@ -744,8 +591,6 @@ module forlab
   interface tril
     module procedure tril_i, tril_r, tril_c
   end interface tril
-  public :: tril
-  private :: tril_r, tril_c
 
   !---------------------------------------------------------------------
   ! Function triu
@@ -753,8 +598,6 @@ module forlab
   interface triu
     module procedure triu_i, triu_r, triu_c
   end interface triu
-  public :: triu
-  private :: triu_r, triu_c
 
   !---------------------------------------------------------------------
   ! Function utm2deg
@@ -762,8 +605,6 @@ module forlab
   interface utm2deg
     module procedure utm2deg0, utm2deg1
   end interface utm2deg
-  public :: utm2deg
-  private :: utm2deg0, utm2deg1
 
   !---------------------------------------------------------------------
   ! Function var
@@ -771,8 +612,6 @@ module forlab
   interface var
     module procedure var1, var2
   end interface var
-  public :: var
-  private :: var1, var2
 
   !---------------------------------------------------------------------
   ! Function vertcat
@@ -781,9 +620,6 @@ module forlab
     module procedure vertcat_r1, vertcat_r2, vertcat_c2, vertcat_r12, &
       vertcat_r21
   end interface vertcat
-  public :: vertcat
-  private :: vertcat_r1, vertcat_r2, vertcat_c2, vertcat_r12, &
-    vertcat_r21
 
   !---------------------------------------------------------------------
   ! Function zeros
@@ -791,8 +627,6 @@ module forlab
   interface zeros
     module procedure zeros1, zeros2, zeros3
   end interface zeros
-  public :: zeros
-  private :: zeros1, zeros2, zeros3
 
 !=======================================================================
 ! End of declaration of interfaces
@@ -956,10 +790,8 @@ contains
 
   integer(kind = IPRE) function argmax1(x)
     real(kind = RPRE), dimension(:), intent(in) :: x
-    integer(kind = IPRE) :: idx(1)
 
-    idx = maxloc(x, .not. isnan(x))
-    argmax1 = idx(1)
+    argmax1 = maxloc(x, 1, .not. isnan(x))
     return
   end function argmax1
 
@@ -1007,10 +839,8 @@ contains
 
   integer(kind = IPRE) function argmin1(x)
     real(kind = RPRE), dimension(:), intent(in) :: x
-    integer(kind = IPRE) :: idx(1)
 
-    idx = minloc(x, .not. isnan(x))
-    argmin1 = idx(1)
+    argmin1 = minloc(x, 1, .not. isnan(x))
     return
   end function argmin1
 
@@ -1462,20 +1292,11 @@ contains
 !
 ! Syntax
 !-----------------------------------------------------------------------
-! zq = bspline2(x, y, z, xq, yq)
-! zq = bspline2(x, y, z, xq, yq, order)
 ! ZQ = bspline2(x, y, z, XQ, YQ)
 ! ZQ = bspline2(x, y, z, XQ, YQ, order)
 !
 ! Description
 !-----------------------------------------------------------------------
-! zq = bspline2(x, y, z, xq, yq) returns the approximated vector zq at
-! the query points in xq and yq using a cubic spline (degree 3).
-!
-! zq = bspline2(x, y, z, xq, yq, order) returns the approximated vector
-! zq at the query points in xq and yq with spline curves given the
-! order.
-!
 ! ZQ = bspline2(x, y, Z, XQ, YQ) returns the evaluated matrix ZQ given
 ! mesh type grids XQ and YQ using a bicubic spline (degree 3). ZQ is of
 ! the same shape as XQ and YQ.
@@ -1485,54 +1306,275 @@ contains
 ! is of the same shape as XQ and YQ.
 !=======================================================================
 
-  function bspline2_1(x, y, z, xq, yq, order, n1, n2) result(zq)
-    real(kind = RPRE), dimension(:), allocatable :: zq
-    real(kind = RPRE), dimension(:), intent(in) :: x, y, xq, yq
-    real(kind = RPRE), dimension(:,:), intent(in) :: z
-    integer(kind = IPRE), intent(in), optional :: order, n1, n2
-    integer(kind = IPRE) :: k, m, n, nq, opt_n1, opt_n2
-    real(kind = RPRE), dimension(:,:), allocatable :: bspl_x, bspl_y, bspl_z
-
-    m = size(x)
-    n = size(y)
-    k = 4
-    opt_n1 = 100
-    opt_n2 = 100
-    if (present(order)) k = order
-    if (present(n1)) opt_n1 = n1
-    if (present(n2)) opt_n2 = n2
-    if (k .gt. min(m, n)) then
-      print *, "Error: in bspline2, order k should be less than the " &
-        // "number of control points (" // num2str(k) // " > " &
-        // num2str(min(m, n)) // ")."
-      stop
-    end if
-
-    call bsplrep2(x, y, z, bspl_x, bspl_y, bspl_z, k, opt_n1, opt_n2)
-    zq = spline2(bspl_x(:,1), bspl_y(1,:), bspl_z, xq, yq)
-
-    ! TODO:
-    ! Bilinear interpolation on irregular grid by mapping physical grid
-    ! to logical grid:
-    ! https://www.particleincell.com/2012/quad-interpolation/
-
-    return
-  end function bspline2_1
-
   function bspline2_2(x, y, z, xq, yq, order) result(zq)
     real(kind = RPRE), dimension(:,:), allocatable :: zq
     real(kind = RPRE), dimension(:), intent(in) :: x, y
     real(kind = RPRE), dimension(:,:), intent(in) :: z, xq, yq
     integer(kind = IPRE), intent(in), optional :: order
-    integer(kind = IPRE) :: m, n, k
+    integer(kind = IPRE) :: i, m, n, ny, k
+    real(kind = RPRE), dimension(:,:), allocatable :: tmp
 
     m = size(xq, 1)
     n = size(xq, 2)
+    ny = size(y)
     k = 4
     if (present(order)) k = order
-    zq = reshape( bspline2_1(x, y, z, [ xq ], [ yq ], k), shape = [ m, n ] )
+
+    tmp = zeros(ny, n)
+    do i = 1, ny
+      tmp(i,:) = bspline1(x, z(i,:), xq(i,:), k)
+    end do
+
+    zq = zeros(m, n)
+    do i = 1, n
+      zq(:,i) = bspline1(y, tmp(:,i), yq(:,i), k)
+    end do
+
     return
   end function bspline2_2
+
+!=======================================================================
+! check_directory
+!-----------------------------------------------------------------------
+! check_directory appends '/' do a directory name.
+!
+! Syntax
+!-----------------------------------------------------------------------
+! call check_directory(dirname)
+!
+! Description
+!-----------------------------------------------------------------------
+! call check_directory(dirname) returns a directory name dirname that
+! ends with '/'.
+!=======================================================================
+
+  subroutine check_directory(dirname)
+    character(len = :), allocatable, intent(inout) :: dirname
+    integer(kind = IPRE) :: i
+
+    i = len_trim(dirname)
+    if (dirname(i:i) .ne. "/") dirname = trim(dirname) // "/"
+    return
+  end subroutine check_directory
+
+!=======================================================================
+! chi2cdf
+!-----------------------------------------------------------------------
+! chi2cdf computes the chi-square cumulative distribution function.
+!
+! Syntax
+!-----------------------------------------------------------------------
+! p = chi2cdf(x, v)
+!
+! Description
+!-----------------------------------------------------------------------
+! p = chi2cdf(x, v) returns the chi-square cdf at each of the values
+! in x.
+!=======================================================================
+
+  real(kind = RPRE) function chi2cdf0(x, v)
+    real(kind = RPRE), intent(in) :: x
+    integer(kind = IPRE), intent(in) :: v
+
+    chi2cdf0 = gammainc(real(x/2., RPRE), real(v/2., RPRE))
+    return
+  end function chi2cdf0
+
+  function chi2cdf1_0(X, v)
+    real(kind = RPRE), dimension(:), allocatable :: chi2cdf1_0
+    real(kind = RPRE), dimension(:), intent(in) :: X
+    integer(kind = IPRE), intent(in) :: v
+    integer(kind = IPRE) :: i, n
+
+    n = size(X)
+    chi2cdf1_0 = zeros(n)
+    do i = 1, n
+      chi2cdf1_0(i) = chi2cdf0(X(i), v)
+    end do
+    return
+  end function chi2cdf1_0
+
+  function chi2cdf1_1(X, V)
+    real(kind = RPRE), dimension(:), allocatable :: chi2cdf1_1
+    real(kind = RPRE), dimension(:), intent(in) :: X
+    integer(kind = IPRE), dimension(:), intent(in) :: V
+    integer(kind = IPRE) :: i, n
+
+    n = size(X)
+    chi2cdf1_1 = zeros(n)
+    do i = 1, n
+      chi2cdf1_1(i) = chi2cdf0(X(i), V(i))
+    end do
+    return
+  end function chi2cdf1_1
+
+!=======================================================================
+! chi2inv
+!-----------------------------------------------------------------------
+! chi2inv computes the chi-square inverse cumulative distribution
+! function.
+!
+! Syntax
+!-----------------------------------------------------------------------
+! x = chi2inv(p, v)
+!
+! Description
+!-----------------------------------------------------------------------
+! x = chi2inv(p, v) returns the chi-square inverse cdf at each of the
+! values in p.
+!=======================================================================
+
+  real(kind = RPRE) function chi2inv0(p, v)
+    real(kind = RPRE), intent(in), target :: p
+    integer(kind = IPRE), intent(in), target :: v
+    real(kind = RPRE) :: a, b
+    real(kind = RPRE), pointer, save :: p_ptr
+    integer(kind = IPRE), pointer, save :: v_ptr
+
+    if ( p .le. 0. .or. p .ge. 1. ) then
+      print *, "Error: in chi2inv0(p, v), p should be between 0 and 1"
+      stop
+    end if
+    if ( v .le. 0 ) then
+      print *, "Error: in chi2inv0(p, v), v should be greater than 0"
+      stop
+    end if
+
+    p_ptr => p
+    v_ptr => v
+    a = 0.
+    b = real(v, RPRE)
+    do while ( chi2cdf(b, v) .lt. p )
+      b = b * b
+    end do
+    chi2inv0 = fminbnd(chi2func, a, b)
+    return
+  contains
+
+    real(kind = RPRE) function chi2func(x)
+      real(kind = RPRE), intent(in) :: x
+      chi2func = abs( chi2cdf0(x, v_ptr) - p_ptr )
+      return
+    end function chi2func
+
+  end function chi2inv0
+
+  function chi2inv1_0(P, v)
+    real(kind = RPRE), dimension(:), allocatable :: chi2inv1_0
+    real(kind = RPRE), dimension(:), intent(in) :: P
+    integer(kind = IPRE), intent(in) :: v
+    integer(kind = IPRE) :: i, n
+
+    n = size(P)
+    chi2inv1_0 = zeros(n)
+    do i = 1, n
+      chi2inv1_0(i) = chi2inv0(P(i), v)
+    end do
+    return
+  end function chi2inv1_0
+
+  function chi2inv1_1(P, V)
+    real(kind = RPRE), dimension(:), allocatable :: chi2inv1_1
+    real(kind = RPRE), dimension(:), intent(in) :: P
+    integer(kind = IPRE), dimension(:), intent(in) :: V
+    integer(kind = IPRE) :: i, n
+
+    n = size(P)
+    chi2inv1_1 = zeros(n)
+    do i = 1, n
+      chi2inv1_1(i) = chi2inv0(P(i), V(i))
+    end do
+    return
+  end function chi2inv1_1
+
+!=======================================================================
+! chi2pdf
+!-----------------------------------------------------------------------
+! chi2pdf computes the chi-square probability distribution function.
+!
+! Syntax
+!-----------------------------------------------------------------------
+! y = chi2pdf(x, v)
+!
+! Description
+!-----------------------------------------------------------------------
+! y = chi2pdf(x, v) returns the chi-square pdf at each of the values
+! in x.
+!=======================================================================
+
+  real(kind = RPRE) function chi2pdf0(x, v)
+    real(kind = RPRE), intent(in) :: x
+    integer(kind = IPRE), intent(in) :: v
+    real(kind = RPRE) :: v2
+
+    if ( x .gt. 0. ) then
+      v2 = 0.5 * real(v, RPRE)
+      chi2pdf0 = 1. / (2.*gamma(v2)) * (x/2)**(v2-1.) * exp(-x/2.)
+    else
+      chi2pdf0 = 0.
+    end if
+    return
+  end function chi2pdf0
+
+  function chi2pdf1_0(X, v)
+    real(kind = RPRE), dimension(:), allocatable :: chi2pdf1_0
+    real(kind = RPRE), dimension(:), intent(in) :: X
+    integer(kind = IPRE), intent(in) :: v
+    integer(kind = IPRE) :: i, n
+
+    n = size(X)
+    chi2pdf1_0 = zeros(n)
+    do i = 1, n
+      chi2pdf1_0(i) = chi2pdf0(X(i), v)
+    end do
+    return
+  end function chi2pdf1_0
+
+  function chi2pdf1_1(X, V)
+    real(kind = RPRE), dimension(:), allocatable :: chi2pdf1_1
+    real(kind = RPRE), dimension(:), intent(in) :: X
+    integer(kind = IPRE), dimension(:), intent(in) :: V
+    integer(kind = IPRE) :: i, n
+
+    n = size(X)
+    chi2pdf1_1 = zeros(n)
+    do i = 1, n
+      chi2pdf1_1(i) = chi2pdf0(X(i), V(i))
+    end do
+    return
+  end function chi2pdf1_1
+
+!=======================================================================
+! chi2rand
+!-----------------------------------------------------------------------
+! chi2rand generates chi-square random numbers.
+!
+! Syntax
+!-----------------------------------------------------------------------
+! r = chi2rand(v)
+! r = chi2rand(v, dim1)
+!
+! Description
+!-----------------------------------------------------------------------
+! r = chi2rand(v) returns a chi-square distributed random number with
+! v degrees of freedom.
+!
+! r = chi2rand(v, dim1) returns a dim1 vector of chi-square distributed
+! random number with v degrees of freedom.
+!=======================================================================
+
+  real(kind = RPRE) function chi2rand0(v)
+    integer(kind = IPRE), intent(in) :: v
+    chi2rand0 = sum(randn(v)**2)
+    return
+  end function chi2rand0
+
+  function chi2rand1(v, dim1)
+    real(kind = RPRE), dimension(:), allocatable :: chi2rand1
+    integer(kind = IPRE), intent(in) :: v, dim1
+    chi2rand1 = sum(randn(dim1, v)**2, dim = 2)
+    return
+  end function chi2rand1
 
 !=======================================================================
 ! chol
@@ -2165,6 +2207,122 @@ contains
   end function datevec0
 
 !=======================================================================
+! dbindex
+!-----------------------------------------------------------------------
+! dbindex computes the Davies-Bouldin index for evaluating clutering
+! algorithms.
+!
+! Syntax
+!-----------------------------------------------------------------------
+! db = dbindex(x, cluster, means)
+! db = dbindex(x, cluster, means, p, q)
+! db = dbindex(X, cluster, means)
+! db = dbindex(X, cluster, means, p, q)
+!
+! Description
+!-----------------------------------------------------------------------
+! db = dbindex(x, cluster, means) returns the Davies-Bouldin index using
+! the Euclidian distance.
+!
+! db = dbindex(x, cluster, means, p, q) returns the Davies-Bouldin index
+! using the metric defined by p and q.
+!
+! db = dbindex(X, cluster, means) returns the Davies-Bouldin index using
+! the Euclidian distance, each row of array X being an observation and
+! each column a parameter.
+!
+! db = dbindex(X, cluster, means, p, q) returns the Davies-Bouldin index
+! using the metric defined by p and q, each row of array X being an
+! observation and each column a parameter.
+!
+! Notes
+!-----------------------------------------------------------------------
+! After Davies D. L. and Bouldin D. W. (1979): "A Cluster Separation
+! Measure".
+!=======================================================================
+
+  real(kind = RPRE) function dbindex1(x, cluster, means, p, q) result(db)
+    real(kind = RPRE), dimension(:), intent(in) :: x, means
+    integer(kind = IPRE), dimension(:), intent(in) :: cluster
+    real(kind = RPRE), intent(in), optional :: p, q
+    integer(kind = IPRE) :: K, n
+    real(kind = RPRE) :: opt_p, opt_q
+    real(kind = RPRE), dimension(:,:), allocatable :: A, mu
+
+    K = size(means)
+    if ( K .eq. 1 ) then
+      print *, "Warning: in dbindex, the Davies-Bouldin index cannot " &
+        // "be defined for K = 1."
+      db = 1.0d0
+      return
+    end if
+
+    opt_p = 2.
+    opt_q = 2.
+    if (present(p)) opt_p = p
+    if (present(q)) opt_q = q
+
+    n = size(x)
+    A = reshape( x, shape = [ n, 1 ], order = [ 1, 2 ] )
+    mu = reshape( x, shape = [ K, 1 ], order = [ 1, 2 ] )
+    db = dbindex2(A, cluster, mu, opt_p, opt_q)
+    return
+  end function dbindex1
+
+  real(kind = RPRE) function dbindex2(X, cluster, means, p, q) result(db)
+    real(kind = RPRE), dimension(:,:), intent(in) :: X
+    integer(kind = IPRE), dimension(:), intent(in) :: cluster
+    real(kind = RPRE), dimension(:,:), intent(in) :: means
+    real(kind = RPRE), intent(in), optional :: p, q
+    integer(kind = IPRE) :: i, j, K
+    real(kind = RPRE) :: opt_p, opt_q, Mij
+    integer(kind = IPRE), dimension(:), allocatable :: idx
+    real(kind = RPRE), dimension(:), allocatable :: S
+    real(kind = RPRE), dimension(:,:), allocatable :: R
+
+    K = size(means, 1)
+    if ( K .eq. 1 ) then
+      print *, "Warning: in dbindex, the Davies-Bouldin index cannot " &
+        // "be defined for K = 1."
+      db = 1.0d0
+      return
+    end if
+
+    opt_p = 2.
+    opt_q = 2.
+    if (present(p)) opt_p = p
+    if (present(q)) opt_q = q
+
+    ! Measure the scattering within each cluster
+    !============================================
+    S = zeros(K)
+    do i = 1, K
+      idx = find( cluster .eq. i )
+      do j = 1, size(idx)
+        S(i) = S(i) + norm(X(idx(j),:) - means(i,:), opt_q)**2
+      end do
+      S(i) = sqrt( S(i) / real(size(idx), RPRE) )
+    end do
+
+    ! Measure the similarity function R between each cluster
+    !========================================================
+    R = zeros(K, K)
+    do i = 1, K-1
+      do j = i+1, K
+        Mij = norm(means(i,:) - means(j,:), opt_p)  ! Distance between clusters i and j
+        R(i,j) = ( S(i) + S(j) ) / Mij
+        R(j,i) = R(i,j)
+      end do
+    end do
+
+    ! Compute the Davies-Bouldin index
+    !==================================
+    db = mean( [ ( maxval(R(i,:)), i = 1, K ) ] )
+
+    return
+  end function dbindex2
+
+!=======================================================================
 ! deboor
 !-----------------------------------------------------------------------
 ! deboor evaluates recursively the spline polynomial basis using
@@ -2642,10 +2800,10 @@ contains
     character(len = *), intent(in), optional :: string
 
     if (present(string)) print *, trim(string)
-    if (imagpart(x) .ge. 0.0d0) then
-      print *, num2str(realpart(x)) // " + " // num2str(abs(imagpart(x))) // "i"
+    if (imag(x) .ge. 0.0d0) then
+      print *, num2str(real(x)) // " + " // num2str(abs(imag(x))) // "i"
     else
-      print *, num2str(realpart(x)) // " - " // num2str(abs(imagpart(x))) // "i"
+      print *, num2str(real(x)) // " - " // num2str(abs(imag(x))) // "i"
     end if
     return
   end subroutine disp_c0
@@ -2908,6 +3066,28 @@ contains
   end subroutine eig
 
 !=======================================================================
+! file_exist
+!-----------------------------------------------------------------------
+! file_exist determines whether a File object already exists.
+!
+! Syntax
+!-----------------------------------------------------------------------
+! exist = ofile % exist()
+!
+! Description
+!-----------------------------------------------------------------------
+! call ofile % exist() returns .true. if the File object ofile exists,
+! .false. otherwise.
+!=======================================================================
+
+  logical function file_exist(self)
+    class(File), intent(inout) :: self
+
+    inquire(file = trim(self % filename), exist = file_exist)
+    return
+  end function file_exist
+
+!=======================================================================
 ! eye
 !-----------------------------------------------------------------------
 ! eye creates the identity matrix.
@@ -2992,8 +3172,8 @@ contains
     integer(kind = IPRE), intent(in) :: unit
     character(len = *), intent(in) :: filename
 
-    init_File%unit = unit
-    init_File%filename = trim(filename)
+    init_File % unit = unit
+    init_File % filename = trim(filename)
     return
   end function init_File
 
@@ -3127,7 +3307,7 @@ contains
 !=======================================================================
 
   real(kind = RPRE) function fminbnd(fitness, a, b, eps)
-    procedure(func) :: fitness
+    procedure(func1d) :: fitness
     real(kind = RPRE), intent(in) :: a, b
     real(kind = RPRE), intent(in), optional :: eps
     real(kind = RPRE) :: opt_eps, x1, x2, x3, x4
@@ -3420,6 +3600,301 @@ contains
   end function flipud_r2
 
 !=======================================================================
+! gammainc
+!-----------------------------------------------------------------------
+! gammainc returns the incomplete gamma function.
+!
+! Syntax
+!-----------------------------------------------------------------------
+! y = gammainc(x, a)
+!
+! Description
+!-----------------------------------------------------------------------
+! y = gammainc(x, a) returns the incomplete gamma function of
+! corresponding elements of x and a.
+!=======================================================================
+
+  real(kind = RPRE) function gammainc0(x, a)
+    real(kind = RPRE), intent(in) :: x, a
+
+    if ( x .lt. 0. .or. a .le. 0.) then
+      print *, "Error: in gammainc, x < 0 and/or a <= 0"
+      stop
+    end if
+    if ( x .lt. a+1. ) then
+      gammainc0 = gser(x, a)
+    else
+      gammainc0 = 1. - gcf(x, a)
+    end if
+
+    return
+  contains
+
+    real(kind = RPRE) function gser(x, a)
+      real(kind = RPRE), intent(in) :: x, a
+      integer(kind = IPRE), parameter :: itermax = 100
+      real(kind = RPRE), parameter :: eps = 3.e-7
+      integer(kind = IPRE) :: n
+      real(kind = RPRE) :: gln, ap, del, s
+
+      gln = log(gamma(a))
+      if ( x .le. 0. ) then
+        gser = 0.
+      else
+        ap = a
+        s = 1. / a
+        del = s
+        do n = 1, itermax
+          ap = ap + 1.
+          del = del * x / ap
+          s = s + del
+          if ( abs(del) .lt. abs(s)*eps ) exit
+        end do
+        gser = s * exp(-x + a * log(x) - gln)
+      end if
+      return
+    end function gser
+
+    real(kind = RPRE) function gcf(x, a)
+      real(kind = RPRE), intent(in) :: x, a
+      integer(kind = IPRE), parameter :: itermax = 100
+      real(kind = RPRE), parameter :: eps = 3.e-7, fpmin = 1.e-30
+      integer(kind = IPRE) :: i
+      real(kind = RPRE) :: an, b, c, d, del, h, gln
+
+      gln = log(gamma(a))
+      b = x + 1. - a
+      c = 1. / fpmin
+      d = 1. / b
+      h = d
+      do i = 1, itermax
+        an = -i * (i - a)
+        b = b + 2
+        d = an * d + b
+        if ( abs(d) .lt. fpmin ) d = fpmin
+        c = b + an / c
+        if ( abs(c) .lt. fpmin ) c = fpmin
+        d = 1. / d
+        del = d * c
+        h = h * del
+        if ( abs(del-1.) .lt. eps ) exit
+      end do
+      gcf = h * exp(-x + a * log(x) - gln)
+      return
+    end function gcf
+
+  end function gammainc0
+
+  function gammainc1_0(X, a)
+    real(kind = RPRE), dimension(:), allocatable :: gammainc1_0
+    real(kind = RPRE), dimension(:), intent(in) :: X
+    real(kind = RPRE), intent(in) :: a
+    integer(kind = IPRE) :: i, n
+
+    n = size(X)
+    gammainc1_0 = zeros(n)
+    do i = 1, n
+      gammainc1_0(i) = gammainc0(X(i), a)
+    end do
+    return
+  end function
+
+!=======================================================================
+! gmm
+!-----------------------------------------------------------------------
+! gmm performs Gaussian Mixture Modelling using Expectation-Maximization
+! algorithm.
+!
+! Syntax
+!-----------------------------------------------------------------------
+! idx = gmm(x, K, [options = ])
+! idx = gmm(A, K, [options = ])
+!
+! Description
+!-----------------------------------------------------------------------
+! idx = gmm(x, K, [options = ]) returns the cluster indices of each
+! element in vector x.
+!
+! idx = gmm(A, K, [options = ]) returns the cluster indices of each
+! rows in matrix A.
+!
+! Options
+!-----------------------------------------------------------------------
+! means               Output centroids
+! stdev / covar       Output standard deviation / covariance matrix
+! prob                Output probabilities
+! itermax = 1000      Maximum number of iterations
+! niter               Output number of iterations
+!=======================================================================
+
+  function gmm1(x, K, means, stdev, prob, itermax, niter) result(idx)
+    integer(kind = IPRE), dimension(:), allocatable :: idx
+    real(kind = RPRE), dimension(:), intent(in) :: x
+    integer(kind = IPRE), intent(in) :: K
+    real(kind = RPRE), dimension(:), allocatable, intent(inout), optional :: prob, means, stdev
+    integer(kind = IPRE), intent(in), optional :: itermax
+    integer(kind = IPRE), intent(inout), optional :: niter
+    integer(kind = IPRE) :: opt_itermax, i, j, n, iter
+    real(kind = RPRE), dimension(:), allocatable :: phi, mu, mu_prev, sigma
+    real(kind = RPRE), dimension(:,:), allocatable :: w, pdf, pdf_w
+
+    n = size(x)
+
+    opt_itermax = 1000
+    if (present(itermax)) opt_itermax = itermax
+
+    ! Initialization
+    !================
+    phi = ones(K) / real(K)     ! Equal initial probabilities for each cluster
+    mu = x(randperm(n, K))      ! Random initial means
+    sigma = ones(K) * std(x)    ! Covariance matrices for each variable
+
+    ! Loop until convergence
+    !========================
+    w = zeros(n, K)
+    iter = 0
+    do while ( iter .lt. opt_itermax )
+      iter = iter + 1
+
+      ! Expectation
+      !=============
+      pdf = zeros(n, K)
+      do j = 1, K
+        pdf(:,j) = normpdf(x, mu(j), sigma(j))
+      end do
+
+      pdf_w = pdf * repmat(phi, n, 2)
+      w = pdf_w / repmat(sum(pdf_w, dim = 2), K)
+
+      ! Maximization
+      !==============
+      mu_prev = mu
+      do j = 1, K
+        phi(j) = mean(w(:,j))
+        mu(j) = dot_product(w(:,j), x) / sum(w(:,j))
+        sigma(j) = dot_product(w(:,j), (x - mu(j))**2) / sum(w(:,j))
+        sigma(j) = sqrt(sigma(j))
+      end do
+
+      if ( norm(mu - mu_prev) .lt. 1.0d-10 ) exit
+    end do
+
+    idx = zeros(n)
+    do i = 1, n
+      idx(i:i) = maxloc(pdf(i,:))
+    end do
+
+    if (present(niter)) niter = iter
+    if (present(means)) means = mu
+    if (present(stdev)) stdev = sigma
+    if (present(prob)) prob = phi
+
+    return
+  end function gmm1
+
+  function gmm2(A, K, means, covar, prob, itermax, niter) result(idx)
+    integer(kind = IPRE), dimension(:), allocatable :: idx
+    real(kind = RPRE), dimension(:,:), intent(in) :: A
+    integer(kind = IPRE), intent(in) :: K
+    real(kind = RPRE), dimension(:), allocatable, intent(inout), optional :: prob
+    real(kind = RPRE), dimension(:,:), allocatable, intent(inout), optional :: means
+    real(kind = RPRE), dimension(:,:,:), allocatable, intent(inout), optional :: covar
+    integer(kind = IPRE), intent(in), optional :: itermax
+    integer(kind = IPRE), intent(inout), optional :: niter
+
+    integer(kind = IPRE) :: opt_itermax, i, j, n, p, iter
+    real(kind = RPRE), dimension(:), allocatable :: phi
+    real(kind = RPRE), dimension(:,:), allocatable :: mu, mu_prev, w, pdf, &
+      pdf_w, tmp
+    real(kind = RPRE), dimension(:,:,:), allocatable :: sigma
+
+    n = size(A, 1)
+    p = size(A, 2)
+
+    opt_itermax = 1000
+    if (present(itermax)) opt_itermax = itermax
+
+    ! Initialization
+    !================
+    phi = ones(K) / real(K)     ! Equal initial probabilities for each cluster
+    mu = A(randperm(n, K),:)    ! Random initial means
+    sigma = zeros(p, p, K)      ! Covariance matrices for each variable
+
+    tmp = cov(A)
+    do j = 1, K
+      sigma(:,:,j) = tmp
+    end do
+
+    ! Loop until convergence
+    !========================
+    w = zeros(n, K)
+    iter = 0
+    do while ( iter .lt. opt_itermax )
+      iter = iter + 1
+
+      ! Expectation
+      !=============
+      pdf = zeros(n, K)
+      do j = 1, K
+        pdf(:,j) = normpdf(A, mu(j,:), sigma(:,:,j))
+      end do
+
+      pdf_w = pdf * repmat(phi, n, 2)
+      w = pdf_w / repmat(sum(pdf_w, dim = 2), K)
+
+      ! Maximization
+      !==============
+      mu_prev = mu
+      do j = 1, K
+        phi(j) = mean(w(:,j))
+        mu(j,:) = matmul(w(:,j), A) / sum(w(:,j))
+        tmp = A - repmat(mu(j,:), n, 2)
+
+        sigma(:,:,j) = zeros(p, p)
+        do i = 1, n
+          sigma(:,:,j) = sigma(:,:,j) &
+                         + w(i,j) * matmul(transpose(tmp(i:i,:)), tmp(i:i,:)) &
+                                  / sum(w(:,j))
+        end do
+      end do
+
+      if ( means_residuals(mu, mu_prev) .lt. 1.0d-10 ) exit
+    end do
+
+    idx = zeros(n)
+    do i = 1, n
+      idx(i:i) = maxloc(pdf(i,:))
+    end do
+
+    if (present(niter)) niter = iter
+    if (present(means)) means = mu
+    if (present(covar)) covar = sigma
+    if (present(prob)) prob = phi
+
+    return
+  contains
+
+    !-------------------------------------------------------------------
+    ! means_residuals
+    !-------------------------------------------------------------------
+    function means_residuals(means1, means2) result(eps)
+      real(kind = RPRE) :: eps
+      real(kind = RPRE), dimension(:,:), intent(in) :: means1, means2
+      real(kind = RPRE), dimension(:,:), allocatable :: means
+      integer(kind = IPRE) :: k
+
+      eps = 0.0d0
+      means = abs( means2 - means1 )
+      do k = 1, p
+        eps = eps + sum(means(:,k))**2
+      end do
+      eps = sqrt(eps)
+      return
+    end function means_residuals
+
+  end function gmm2
+
+!=======================================================================
 ! horzcat
 !-----------------------------------------------------------------------
 ! horzcat concatenates arrays horizontally.
@@ -3625,15 +4100,15 @@ contains
     real(kind = RPRE) :: vq
     real(kind = RPRE), intent(in) :: xq
     real(kind = RPRE), dimension(:), intent(in) :: x, v
-    integer(kind = IPRE) :: i, x1(1), x2(1), ix(2)
+    integer(kind = IPRE) :: i, x1, x2, ix(2)
     real(kind = RPRE) :: vn, xr(2), vr(2)
 
-    x1 = minloc(xq - x, mask = xq .ge. x)
-    x2 = maxloc(xq - x, mask = xq .lt. x)
-    if ( x2(1) .ne. 0 ) then
-      vn = abs( (x(x2(1)) - x(x1(1))) )
-      xr = x( [ x1(1), x2(1) ] )
-      vr = v( [ x1(1), x2(1) ] )
+    x1 = minloc(xq - x, 1, mask = xq .ge. x)
+    x2 = maxloc(xq - x, 1, mask = xq .lt. x)
+    if ( x2 .ne. 0 ) then
+      vn = abs( (x(x2) - x(x1)) )
+      xr = x( [ x1, x2 ] )
+      vr = v( [ x1, x2 ] )
       vq = vr(1) * ( xr(2) - xq ) + vr(2) * ( xq - xr(1) )
       vq = vq / vn
     else
@@ -3680,24 +4155,24 @@ contains
     real(kind = RPRE), intent(in) :: xq, yq
     real(kind = RPRE), dimension(:), intent(in) :: x, y
     real(kind = RPRE), dimension(:,:), intent(in) :: v
-    integer(kind = IPRE) :: i, x1(1), y1(1), x2(1), y2(1), ix(4), iy(4)
+    integer(kind = IPRE) :: i, x1, y1, x2, y2, ix(4), iy(4)
     real(kind = RPRE) :: vn, xr(2), yr(2), N(4), vr(4)
 
-    x1 = minloc(xq - x, mask = xq .ge. x)
-    y1 = minloc(yq - y, mask = yq .ge. y)
-    x2 = maxloc(xq - x, mask = xq .lt. x)
-    y2 = maxloc(yq - y, mask = yq .lt. y)
-    vn = abs( (x(x2(1)) - x(x1(1))) &
-            * (y(y2(1)) - y(y1(1))) )
-    xr = x( [ x1(1), x2(1) ] )
-    yr = y( [ y1(1), y2(1) ] )
+    x1 = minloc(xq - x, 1, mask = xq .ge. x)
+    y1 = minloc(yq - y, 1, mask = yq .ge. y)
+    x2 = maxloc(xq - x, 1, mask = xq .lt. x)
+    y2 = maxloc(yq - y, 1, mask = yq .lt. y)
+    vn = abs( (x(x2) - x(x1)) &
+            * (y(y2) - y(y1)) )
+    xr = x( [ x1, x2 ] )
+    yr = y( [ y1, y2 ] )
     ix = [ 2, 1, 2, 1 ]
     iy = [ 2, 2, 1, 1 ]
     do i = 1, 4
       N(i) = abs( (xr(ix(i)) - xq) * (yr(iy(i)) - yq) )
     end do
-    vr = reshape(v( [ x1(1), x2(1) ], &
-                    [ y1(1), y2(1) ] ), shape = [ 4 ])
+    vr = reshape(v( [ x1, x2 ], &
+                    [ y1, y2 ] ), shape = [ 4 ])
     vq = dot_product(vr, N/vn)
     return
   end function interp2_0
@@ -3724,7 +4199,7 @@ contains
 
     m = size(xq, 1)
     n = size(xq, 2)
-    vq = reshape( interp2_1(x, y, v, [ xq ], [ yq ]), shape = [ m, n ] )
+    vq = reshape( interp2_1(y, x, v, [ yq ], [ xq ]), shape = [ m, n ] )
     return
   end function interp2_2
 
@@ -3748,31 +4223,31 @@ contains
     real(kind = RPRE), intent(in) :: xq, yq, zq
     real(kind = RPRE), dimension(:), intent(in) :: x, y, z
     real(kind = RPRE), dimension(:,:,:), intent(in) :: v
-    integer(kind = IPRE) :: i, x1(1), y1(1), z1(1), x2(1), y2(1), z2(1), &
+    integer(kind = IPRE) :: i, x1, y1, z1, x2, y2, z2, &
       ix(8), iy(8), iz(8)
     real(kind = RPRE) :: vn, xr(2), yr(2), zr(2), N(8), vr(8)
 
-    x1 = minloc(xq - x, mask = xq .ge. x)
-    y1 = minloc(yq - y, mask = yq .ge. y)
-    z1 = minloc(zq - z, mask = zq .ge. z)
-    x2 = maxloc(xq - x, mask = xq .lt. x)
-    y2 = maxloc(yq - y, mask = yq .lt. y)
-    z2 = maxloc(zq - z, mask = zq .lt. z)
-    vn = abs( (x(x2(1)) - x(x1(1))) &
-            * (y(y2(1)) - y(y1(1))) &
-            * (z(z2(1)) - z(z1(1))) )
-    xr = x( [ x1(1), x2(1) ] )
-    yr = y( [ y1(1), y2(1) ] )
-    zr = z( [ z1(1), z2(1) ] )
+    x1 = minloc(xq - x, 1, mask = xq .ge. x)
+    y1 = minloc(yq - y, 1, mask = yq .ge. y)
+    z1 = minloc(zq - z, 1, mask = zq .ge. z)
+    x2 = maxloc(xq - x, 1, mask = xq .lt. x)
+    y2 = maxloc(yq - y, 1, mask = yq .lt. y)
+    z2 = maxloc(zq - z, 1, mask = zq .lt. z)
+    vn = abs( (x(x2) - x(x1)) &
+            * (y(y2) - y(y1)) &
+            * (z(z2) - z(z1)) )
+    xr = x( [ x1, x2 ] )
+    yr = y( [ y1, y2 ] )
+    zr = z( [ z1, z2 ] )
     ix = [ 2, 1, 2, 1, 2, 1, 2, 1 ]
     iy = [ 2, 2, 1, 1, 2, 2, 1, 1 ]
     iz = [ 2, 2, 2, 2, 1, 1, 1, 1 ]
     do i = 1, 8
       N(i) = abs( (xr(ix(i)) - xq) * (yr(iy(i)) - yq) * (zr(iz(i)) - zq) )
     end do
-    vr = reshape(v( [ x1(1), x2(1) ], &
-                    [ y1(1), y2(1) ], &
-                    [ z1(1), z2(1) ] ), shape = [ 8 ])
+    vr = reshape(v( [ x1, x2 ], &
+                    [ y1, y2 ], &
+                    [ z1, z2 ] ), shape = [ 8 ])
     vq = dot_product(vr, N/vn)
     return
   end function interp3_0
@@ -4359,71 +4834,111 @@ contains
   end function k2test
 
 !=======================================================================
-! ksdensity
+! kde
 !-----------------------------------------------------------------------
-! ksdensity computes the kernel-density estimate using Gaussian kernels.
+! kde computes the kernel density estimation assuming Gaussian kernels
+! for univariate and bivariate data. The default bandwidth is calculated
+! using Silverman's rule of thumb.
 !
 ! Syntax
 !-----------------------------------------------------------------------
-! call ksdensity(x, f, xi)
-! call ksdensity(x, f, xi, pts)
-! call ksdensity(x, f, xi, bw)
-! call ksdensity(x, f, xi, pts, bw)
+! call kde(x, f, xi)
+! call kde(x, f, xi, bw)
+! call kde(A, f, xi, yi)
+! call kde(A, f, xi, yi, H)
 !
 ! Description
 !-----------------------------------------------------------------------
-! call ksdensity(x, f, xi) returns the probability density estimate f
-! at equally-spaced points xi for the sample data in the vector x.
+! call kde(x, f, xi) returns the probability density estimation f at
+! points xi for the sample data in the vector x.
 !
-! call ksdensity(x, f, xi, pts) returns the PDE f at points xi = pts.
+! call kde(x, f, xi, bw) returns the PDE f at points xi using the kernel
+! bandwidth bw.
 !
-! call ksdensity(x, f, xi, bw) returns the PDE f at points xi using the
-! kernel bandwidth bw.
+! call kde(A, f, xi, yi) returns the PDE f at points xi and yi.
 !
-! call ksdensity(x, f, xi, pts, bw) returns the PDE f at points xi = pts
-! using the kernel bandwidth bw.
+! call kde(A, f, xi, yi, H) returns the PDE f at points xi and yi using
+! the bandwidth H.
 !=======================================================================
 
-  subroutine ksdensity1(x, f, xi, pts, bw)
+  subroutine kde1(x, f, xi, bw)
     real(kind = RPRE), dimension(:), intent(in) :: x
-    real(kind = RPRE), dimension(:), allocatable, intent(out) :: xi, f
-    real(kind = RPRE), dimension(:), intent(in), optional :: pts
+    real(kind = RPRE), dimension(:), allocatable, intent(out) :: f
+    real(kind = RPRE), dimension(:), allocatable, intent(inout), optional :: xi
     real(kind = RPRE), intent(in), optional :: bw
-    integer(kind = IPRE) :: i, j, n, npts
+    integer(kind = IPRE) :: ix, j, n, nx
     real(kind = RPRE) :: opt_bw
+    real(kind = RPRE), dimension(:), allocatable :: opt_xi
 
     n = size(x)
     opt_bw = ( 4.*std(x)**5 / (3.*n) )**0.2
     if (present(bw)) opt_bw = bw
-    if (present(pts)) then
-      npts = size(pts)
-      xi = pts
+    if (present(xi) .and. allocated(xi)) then
+      nx = size(xi)
+      opt_xi = xi
     else
-      npts = 100
-      xi = linspace(minval(x)-3*opt_bw, maxval(x)+3*opt_bw, npts)
+      nx = 100
+      opt_xi = linspace(minval(x)-3*opt_bw, maxval(x)+3*opt_bw, nx)
     end if
 
-    f = zeros(npts)
-    do i = 1, npts
+    f = zeros(nx)
+    do ix = 1, nx
       do j = 1, n
-        f(i) = f(i) + kgauss( ( xi(i) - x(j) ) / opt_bw )
+        f(ix) = f(ix) + exp( -0.5 * ( ( opt_xi(ix) - x(j) ) / opt_bw )**2 )
       end do
     end do
-    f = f / ( n * opt_bw )
+    f = 0.3989422804014327 * f / ( n * opt_bw )
+
+    if (present(xi) .and. .not. allocated(xi)) xi = opt_xi
     return
-  contains
+  end subroutine kde1
 
-    !-------------------------------------------------------------------
-    ! kgauss
-    !-------------------------------------------------------------------
-    real(kind = RPRE) function kgauss(x)
-      real(kind = RPRE), intent(in) :: x
+  subroutine kde2(A, f, xi, yi, H)
+    real(kind = RPRE), dimension(:,:), intent(in) :: A
+    real(kind = RPRE), dimension(:,:), allocatable, intent(out) :: f
+    real(kind = RPRE), dimension(:), allocatable, intent(inout), optional :: xi, yi
+    real(kind = RPRE), dimension(:,:), intent(in), optional :: H
+    integer(kind = IPRE) :: ix, iy, j, n, nx, ny
+    real(kind = RPRE) :: opt_H(2,2), invH(2,2), x(2)
+    real(kind = RPRE), dimension(:), allocatable :: opt_xi, opt_yi
 
-      kgauss = 0.3989422804014327d0 * exp( -0.5d0 * x * x )
-      return
-    end function kgauss
+    n = size(A, 1)
+    if (present(H)) then
+      opt_H = H
+    else
+      opt_H = cov(A) * n**(-1./3.)    ! Squared
+    end if
+    if (present(xi) .and. allocated(xi)) then
+      nx = size(xi)
+      opt_xi = xi
+    else
+      nx = 100
+      opt_xi = linspace(minval(A(:,1))-3*opt_H(1,1), maxval(A(:,1))+3*opt_H(1,1), nx)
+    end if
+    if (present(yi) .and. allocated(yi)) then
+      ny = size(yi)
+      opt_yi = yi
+    else
+      ny = 100
+      opt_yi = linspace(minval(A(:,2))-3*opt_H(2,2), maxval(A(:,2))+3*opt_H(2,2), ny)
+    end if
 
-  end subroutine ksdensity1
+    invH = inv(opt_H)
+    f = zeros(nx, ny)
+    do ix = 1, nx
+      do iy = 1, ny
+        do j = 1, n
+          x = [ opt_xi(ix), opt_yi(iy) ] - [ A(j,:) ]
+          f(ix,iy) = f(ix,iy) + exp( -0.5 * dot_product(matmul(x, invH), x) )
+        end do
+      end do
+    end do
+    f = f / ( sqrt( det( real(2.*pi, RPRE) * opt_H ) ) * real(n, RPRE) )
+
+    if (present(xi) .and. .not. allocated(xi)) xi = opt_xi
+    if (present(yi) .and. .not. allocated(yi)) yi = opt_yi
+    return
+  end subroutine kde2
 
 !=======================================================================
 ! kurtosis
@@ -4646,33 +5161,38 @@ contains
     if (present(kind)) opt_kind = kind
 
     infile = File(999, trim(filename))
-    inquire(file = filename, size = fs)
-    select case(opt_kind)
-      case(4)
-        if ( mod(fs, 4) .eq. 0 ) then
-          dim1 = fs / 4
-          allocate(tmp4(dim1), loadbin0(dim1))
-          call infile%open(4*dim1)
-          read(infile%unit, rec = 1) tmp4
-          call infile%close()
-          loadbin0 = tmp4
-        else
-          print *, "Error: in loadbin, file size mismatches kind."
-          stop
-        end if
-      case(8)
-        if ( mod(fs, 8) .eq. 0 ) then
-          dim1 = fs / 8
-          allocate(tmp8(dim1), loadbin0(dim1))
-          call infile%open(8*dim1)
-          read(infile%unit, rec = 1) tmp8
-          call infile%close()
-          loadbin0 = tmp8
-        else
-          print *, "Error: in loadbin, file size mismatches kind."
-          stop
-        end if
-    end select
+    if ( infile % exist() ) then
+      inquire(file = filename, size = fs)
+      select case(opt_kind)
+        case(4)
+          if ( mod(fs, 4) .eq. 0 ) then
+            dim1 = fs / 4
+            allocate(tmp4(dim1), loadbin0(dim1))
+            call infile % open(4*dim1)
+            read(infile % unit, rec = 1) tmp4
+            call infile % close()
+            loadbin0 = tmp4
+          else
+            print *, "Error: in loadbin, file size mismatches kind."
+            stop
+          end if
+        case(8)
+          if ( mod(fs, 8) .eq. 0 ) then
+            dim1 = fs / 8
+            allocate(tmp8(dim1), loadbin0(dim1))
+            call infile % open(8*dim1)
+            read(infile % unit, rec = 1) tmp8
+            call infile % close()
+            loadbin0 = tmp8
+          else
+            print *, "Error: in loadbin, file size mismatches kind."
+            stop
+          end if
+      end select
+    else
+      print *, "Error: '" // trim(filename) // "' not found"
+      stop
+    end if
     return
   end function loadbin0
 
@@ -4684,22 +5204,27 @@ contains
     real(kind = 8), dimension(:), allocatable :: tmp8
     type(File) :: infile
 
-    allocate(loadbin1(dim1))
     infile = File(999, trim(filename))
-    select case(kind)
-      case(4)
-        allocate(tmp4(dim1))
-        call infile%open(4*dim1)
-        read(infile%unit, rec = 1) tmp4
-        call infile%close()
-        loadbin1 = tmp4
-      case(8)
-        allocate(tmp8(dim1))
-        call infile%open(8*dim1)
-        read(infile%unit, rec = 1) tmp8
-        call infile%close()
-        loadbin1 = tmp8
-    end select
+    if ( infile % exist() ) then
+      allocate(loadbin1(dim1))
+      select case(kind)
+        case(4)
+          allocate(tmp4(dim1))
+          call infile % open(4*dim1)
+          read(infile % unit, rec = 1) tmp4
+          call infile % close()
+          loadbin1 = tmp4
+        case(8)
+          allocate(tmp8(dim1))
+          call infile % open(8*dim1)
+          read(infile % unit, rec = 1) tmp8
+          call infile % close()
+          loadbin1 = tmp8
+      end select
+    else
+      print *, "Error: '" // trim(filename) // "' not found"
+      stop
+    end if
     return
   end function loadbin1
 
@@ -4711,22 +5236,27 @@ contains
     real(kind = 8), dimension(:,:), allocatable :: tmp8
     type(File) :: infile
 
-    allocate(loadbin2(dim1, dim2))
     infile = File(999, trim(filename))
-    select case(kind)
-      case(4)
-        allocate(tmp4(dim1, dim2))
-        call infile%open(4*dim1*dim2)
-        read(infile%unit, rec = 1) tmp4
-        call infile%close()
-        loadbin2 = tmp4
-      case(8)
-        allocate(tmp8(dim1, dim2))
-        call infile%open(8*dim1*dim2)
-        read(infile%unit, rec = 1) tmp8
-        call infile%close()
-        loadbin2 = tmp8
-    end select
+    if ( infile % exist() ) then
+      allocate(loadbin2(dim1, dim2))
+      select case(kind)
+        case(4)
+          allocate(tmp4(dim1, dim2))
+          call infile % open(4*dim1*dim2)
+          read(infile % unit, rec = 1) tmp4
+          call infile % close()
+          loadbin2 = tmp4
+        case(8)
+          allocate(tmp8(dim1, dim2))
+          call infile % open(8*dim1*dim2)
+          read(infile % unit, rec = 1) tmp8
+          call infile % close()
+          loadbin2 = tmp8
+      end select
+    else
+      print *, "Error: '" // trim(filename) // "' not found"
+      stop
+    end if
     return
   end function loadbin2
 
@@ -4738,22 +5268,27 @@ contains
     real(kind = 8), dimension(:,:,:), allocatable :: tmp8
     type(File) :: infile
 
-    allocate(loadbin3(dim1, dim2, dim3))
     infile = File(999, trim(filename))
-    select case(kind)
-      case(4)
-        allocate(tmp4(dim1, dim2, dim3))
-        call infile%open(4*dim1*dim2*dim3)
-        read(infile%unit, rec = 1) tmp4
-        call infile%close()
-        loadbin3 = tmp4
-      case(8)
-        allocate(tmp8(dim1, dim2, dim3))
-        call infile%open(8*dim1*dim2*dim3)
-        read(infile%unit, rec = 1) tmp8
-        call infile%close()
-        loadbin3 = tmp8
-    end select
+    if ( infile % exist() ) then
+      allocate(loadbin3(dim1, dim2, dim3))
+      select case(kind)
+        case(4)
+          allocate(tmp4(dim1, dim2, dim3))
+          call infile % open(4*dim1*dim2*dim3)
+          read(infile % unit, rec = 1) tmp4
+          call infile % close()
+          loadbin3 = tmp4
+        case(8)
+          allocate(tmp8(dim1, dim2, dim3))
+          call infile % open(8*dim1*dim2*dim3)
+          read(infile % unit, rec = 1) tmp8
+          call infile % close()
+          loadbin3 = tmp8
+      end select
+    else
+      print *, "Error: '" // trim(filename) // "' not found"
+      stop
+    end if
     return
   end function loadbin3
 
@@ -4776,40 +5311,50 @@ contains
 ! txt file filename. dim2 indicates the number of columns of the array.
 !=======================================================================
 
-  function loadtxt1(filename)
-    real(kind = RPRE), dimension(:), allocatable :: loadtxt1
-    character(len = *), intent(in) :: filename
-    integer(kind = IPRE) :: i, m
-    type(File) :: infile
+function loadtxt1(filename)
+  real(kind = RPRE), dimension(:), allocatable :: loadtxt1
+  character(len = *), intent(in) :: filename
+  integer(kind = IPRE) :: i, m
+  type(File) :: infile
 
-    infile = File(999, trim(filename))
-    m = infile%countlines()
+  infile = File(999, trim(filename))
+  if ( infile % exist() ) then
+    m = infile % countlines()
     allocate(loadtxt1(m))
-    call infile%open()
+    call infile % open()
     do i = 1, m
-      read(infile%unit,*) loadtxt1(i)
+      read(infile % unit, *) loadtxt1(i)
     end do
-    call infile%close()
-    return
-  end function loadtxt1
+    call infile % close()
+  else
+    print *, "Error: '" // trim(filename) // "' not found"
+    stop
+  end if
+  return
+end function loadtxt1
 
-  function loadtxt2(filename, dim2)
-    real(kind = RPRE), dimension(:,:), allocatable :: loadtxt2
-    character(len = *), intent(in) :: filename
-    integer(kind = IPRE), intent(in) :: dim2
-    integer(kind = IPRE) :: i, j, m
-    type(File) :: infile
+function loadtxt2(filename, dim2)
+  real(kind = RPRE), dimension(:,:), allocatable :: loadtxt2
+  character(len = *), intent(in) :: filename
+  integer(kind = IPRE), intent(in) :: dim2
+  integer(kind = IPRE) :: i, j, m
+  type(File) :: infile
 
-    infile = File(999, trim(filename))
-    m = infile%countlines()
+  infile = File(999, trim(filename))
+  if ( infile % exist() ) then
+    m = infile % countlines()
     allocate(loadtxt2(m, dim2))
-    call infile%open()
+    call infile % open()
     do i = 1, m
-      read(infile%unit,*) (loadtxt2(i,j), j = 1, dim2)
+      read(infile % unit, *) (loadtxt2(i,j), j = 1, dim2)
     end do
-    call infile%close()
-    return
-  end function loadtxt2
+    call infile % close()
+  else
+    print *, "Error: '" // trim(filename) // "' not found"
+    stop
+  end if
+  return
+end function loadtxt2
 
 !=======================================================================
 ! log2
@@ -4977,6 +5522,169 @@ contains
   end subroutine lu
 
 !=======================================================================
+! kmeans
+!-----------------------------------------------------------------------
+! kmeans performs K-means clustering.
+!
+! Syntax
+!-----------------------------------------------------------------------
+! idx = kmeans(x, K, [options = ])
+! idx = kmeans(A, K, [options = ])
+!
+! Description
+!-----------------------------------------------------------------------
+! idx = kmeans(x, K, [options = ]) returns the cluster indices of each
+! element in vector x.
+!
+! idx = kmeans(A, K, [options = ]) returns the cluster indices of each
+! rows in matrix A.
+!
+! Options
+!-----------------------------------------------------------------------
+! means               Output centroids
+! init                Initial centroids
+! itermax = 1000      Maximum number of iterations
+! niter               Output number of iterations
+!
+! Notes
+!-----------------------------------------------------------------------
+! By default, initials centroids are randomly chosen among data points.
+!=======================================================================
+
+  function kmeans1(x, K, means, init, itermax, niter) result(idx)
+    integer(kind = IPRE), dimension(:), allocatable :: idx
+    real(kind = RPRE), dimension(:), intent(in) :: x
+    integer(kind = IPRE), intent(in) :: K
+    real(kind = RPRE), dimension(:), intent(in), optional :: init
+    real(kind = RPRE), dimension(:), allocatable, intent(inout), optional :: means
+    integer(kind = IPRE), intent(in), optional :: itermax
+    integer(kind = IPRE), intent(inout), optional :: niter
+    integer(kind = IPRE) :: opt_itermax, n, iter
+    real(kind = RPRE), dimension(:,:), allocatable :: m1
+    real(kind = RPRE), dimension(:,:), allocatable :: opt_init, A
+
+    n = size(x)
+
+    opt_itermax = 100
+    if (present(itermax)) opt_itermax = itermax
+    if (present(init)) then
+      opt_init = reshape( init, shape = [ K, 1 ], order = [ 1, 2 ])
+    else
+      opt_init = reshape( x(randperm(n, K)), shape = [ K, 1 ], order = [ 1, 2 ])
+    end if
+
+    A = reshape( x, shape = [ n, 1 ], order = [ 1, 2 ] )
+    idx = kmeans2(A, K, m1, opt_init, opt_itermax, iter)
+
+    if (present(niter)) niter = iter
+    if (present(means)) means = [ m1 ]
+
+    return
+  end function kmeans1
+
+  function kmeans2(A, K, means, init, itermax, niter) result(idx)
+    integer(kind = IPRE), dimension(:), allocatable :: idx
+    real(kind = RPRE), dimension(:,:), intent(in) :: A
+    integer(kind = IPRE), intent(in) :: K
+    real(kind = RPRE), dimension(:,:), intent(in), optional :: init
+    real(kind = RPRE), dimension(:,:), allocatable, intent(inout), optional :: means
+    integer(kind = IPRE), intent(in), optional :: itermax
+    integer(kind = IPRE), intent(inout), optional :: niter
+    integer(kind = IPRE) :: opt_itermax, i, n, p, iter
+    real(kind = RPRE), dimension(:,:), allocatable :: opt_init, m, m1
+
+    n = size(A, 1)
+    p = size(A, 2)
+
+    opt_itermax = 1000
+    if (present(itermax)) opt_itermax = itermax
+    if (present(init)) then
+      opt_init = init
+    else
+      opt_init = A(randperm(n, K),:)
+    end if
+
+    ! Initialization
+    !================
+    m = opt_init
+    idx = update_index(A, m)
+    m1 = update_means(A, idx)
+
+    ! Loop until convergence
+    !========================
+    iter = 0
+    do while ( ( means_residuals(m, m1) .gt. 1.0d-10 ) &
+               .and. ( iter .lt. opt_itermax ) )
+      iter = iter + 1
+      m = m1
+      idx = update_index(A, m)
+      m1 = update_means(A, idx)
+    end do
+
+    if (present(niter)) niter = iter
+    if (present(means)) means = m1
+
+    return
+  contains
+
+    !-------------------------------------------------------------------
+    ! update_index
+    !-------------------------------------------------------------------
+    function update_index(A, means) result(idx)
+      integer(kind = IPRE), dimension(:), allocatable :: idx
+      real(kind = RPRE), dimension(:,:), intent(in) :: A, means
+      integer(kind = IPRE) :: i, j, b(1)
+      real(kind = RPRE), dimension(:), allocatable :: dist
+
+      idx = zeros(n)
+      do i = 1, n
+        dist = zeros(K)
+        do j = 1, K
+          dist(j) = norm(A(i,:) - means(j,:))
+        end do
+        b = minloc(dist)
+        idx(i) = b(1)
+      end do
+      return
+    end function update_index
+
+    !-------------------------------------------------------------------
+    ! update_means
+    !-------------------------------------------------------------------
+    function update_means(A, idx) result(means)
+      real(kind = RPRE), dimension(:,:), allocatable :: means
+      real(kind = RPRE), dimension(:,:), intent(in) :: A
+      integer(kind = IPRE), dimension(:), intent(in) :: idx
+      integer(kind = IPRE) :: j
+
+      means = zeros(K, p)
+      do j = 1, K
+        means(j,:) = mean(A(find(idx .eq. j),:))
+      end do
+      return
+    end function update_means
+
+    !-------------------------------------------------------------------
+    ! means_residuals
+    !-------------------------------------------------------------------
+    function means_residuals(means1, means2) result(eps)
+      real(kind = RPRE) :: eps
+      real(kind = RPRE), dimension(:,:), intent(in) :: means1, means2
+      real(kind = RPRE), dimension(:,:), allocatable :: means
+      integer(kind = IPRE) :: k
+
+      eps = 0.0d0
+      means = abs( means2 - means1 )
+      do k = 1, p
+        eps = eps + sum(means(:,k))**2
+      end do
+      eps = sqrt(eps)
+      return
+    end function means_residuals
+
+  end function kmeans2
+
+!=======================================================================
 ! mad
 !-----------------------------------------------------------------------
 ! mad computes the mean-absolute-deviation or the median-absolute
@@ -5061,6 +5769,183 @@ contains
     end if
     return
   end function mad2
+
+!=======================================================================
+! mbkmeans
+!-----------------------------------------------------------------------
+! mbkmeans performs Mini-batch K-means clustering.
+!
+! Syntax
+!-----------------------------------------------------------------------
+! idx = mbkmeans(x, K, [options = ])
+! idx = mbkmeans(A, K, [options = ])
+!
+! Description
+!-----------------------------------------------------------------------
+! idx = mbkmeans(x, K, [options = ]) returns the cluster indices of each
+! element in vector x.
+!
+! idx = mbkmeans(A, K, [options = ]) returns the cluster indices of each
+! rows in matrix A.
+!
+! Options
+!-----------------------------------------------------------------------
+! perc = 0.2          Size of the batch (percentage)
+! means               Output centroids
+! init                Initial centroids
+! itermax = 50        Maximum number of iterations
+! niter               Output number of iterations
+!=======================================================================
+
+  function mbkmeans1(x, K, perc, means, init, itermax, niter) result(idx)
+    integer(kind = IPRE), dimension(:), allocatable :: idx
+    real(kind = RPRE), dimension(:), intent(in) :: x
+    integer(kind = IPRE), intent(in) :: K
+    real(kind = RPRE), intent(in), optional :: perc
+    real(kind = RPRE), dimension(:), intent(in), optional :: init
+    real(kind = RPRE), dimension(:), allocatable, intent(inout), optional :: means
+    integer(kind = IPRE), intent(in), optional :: itermax
+    integer(kind = IPRE), intent(inout), optional :: niter
+    integer(kind = IPRE) :: opt_itermax, n, iter
+    real(kind = RPRE) :: opt_perc
+    real(kind = RPRE), dimension(:,:), allocatable :: m1
+    real(kind = RPRE), dimension(:,:), allocatable :: opt_init, A
+
+    n = size(x)
+
+    opt_itermax = 50
+    opt_perc = 0.2d0
+    if (present(itermax)) opt_itermax = itermax
+    if (present(perc)) opt_perc = perc
+    if (present(init)) then
+      opt_init = reshape( init, shape = [ K, 1 ], order = [ 1, 2 ])
+    else
+      opt_init = reshape( x(randperm(n, K)), shape = [ K, 1 ], order = [ 1, 2 ])
+    end if
+
+    A = reshape( x, shape = [ n, 1 ], order = [ 1, 2 ] )
+    idx = mbkmeans2(A, K, perc, m1, opt_init, opt_itermax, iter)
+
+    if (present(niter)) niter = iter
+    if (present(means)) means = [ m1 ]
+
+    return
+  end function mbkmeans1
+
+  function mbkmeans2(A, K, perc, means, init, itermax, niter) result(idx)
+    integer(kind = IPRE), dimension(:), allocatable :: idx
+    real(kind = RPRE), dimension(:,:), intent(in) :: A
+    integer(kind = IPRE), intent(in) :: K
+    real(kind = RPRE), intent(in), optional :: perc
+    real(kind = RPRE), dimension(:,:), intent(in), optional :: init
+    real(kind = RPRE), dimension(:,:), allocatable, intent(inout), optional :: means
+    integer(kind = IPRE), intent(in), optional :: itermax
+    integer(kind = IPRE), intent(inout), optional :: niter
+    integer(kind = IPRE) :: opt_itermax, n, p, bs, iter
+    real(kind = RPRE) :: opt_perc
+    integer(kind = IPRE), dimension(:), allocatable :: v
+    real(kind = RPRE), dimension(:,:), allocatable :: opt_init, m, m1, B
+
+    n = size(A, 1)
+    p = size(A, 2)
+
+    opt_itermax = 50
+    opt_perc = 0.2d0
+    if (present(itermax)) opt_itermax = itermax
+    if (present(perc)) opt_perc = perc
+    if (present(init)) then
+      opt_init = init
+    else
+      opt_init = A(randperm(n, K),:)
+    end if
+
+    ! Initialization
+    !================
+    bs = nint(opt_perc*n)   ! Batch size
+    m = opt_init            ! Initial centroids
+    v = zeros(K)            ! Per-center counter
+
+    ! Iterate until convergence
+    !===========================
+    do iter = 1, opt_itermax
+      B = A(randperm(n, bs),:)        ! Batch
+      m1 = m                          ! Previous means
+      idx = cache_means(B, m)         ! Cache means
+      call update_means(m, v, B, idx) ! Update means with gradient
+      if ( means_residuals(m, m1) .lt. 1.0d-2 ) exit
+    end do
+
+    idx = cache_means(A, m)
+
+    if (present(niter)) niter = iter - 1
+    if (present(means)) means = m
+
+    return
+  contains
+
+    !-------------------------------------------------------------------
+    ! cache_means
+    !-------------------------------------------------------------------
+    function cache_means(A, means) result(idx)
+      integer(kind = IPRE), dimension(:), allocatable :: idx
+      real(kind = RPRE), dimension(:,:), intent(in) :: A, means
+      integer(kind = IPRE) :: i, j, n, b(1)
+      real(kind = RPRE), dimension(:), allocatable :: dist
+
+      n = size(A, 1)
+      idx = zeros(n)
+      dist = zeros(K)
+      do i = 1, n
+        dist = 0.0d0
+        do j = 1, K
+          dist(j) = norm(A(i,:) - means(j,:))
+        end do
+        b = minloc(dist)
+        idx(i) = b(1)
+      end do
+      return
+    end function cache_means
+
+    !-------------------------------------------------------------------
+    ! update_means
+    !-------------------------------------------------------------------
+    subroutine update_means(means, v, A, idx)
+      real(kind = RPRE), dimension(:,:), intent(inout) :: means
+      integer(kind = IPRE), dimension(:), intent(inout) :: v
+      real(kind = RPRE), dimension(:,:), intent(in) :: A
+      integer(kind = IPRE), dimension(:), intent(in) :: idx
+      integer(kind = IPRE) :: i, n, c
+      real(kind = RPRE) :: eta
+
+      n = size(A, 1)
+      do i = 1, n
+        c = idx(i)
+        v(c) = v(c) + 1
+        eta = 1.0d0 / real(v(c), RPRE)
+        means(c,:) = ( 1.0d0 - eta ) * means(c,:) + eta * A(i,:)
+      end do
+      return
+    end subroutine update_means
+
+    !-------------------------------------------------------------------
+    ! means_residuals
+    !-------------------------------------------------------------------
+    function means_residuals(means1, means2) result(eps)
+      real(kind = RPRE) :: eps
+      real(kind = RPRE), dimension(:,:), intent(in) :: means1, means2
+      real(kind = RPRE), dimension(:,:), allocatable :: means
+      integer(kind = IPRE) :: k
+
+      eps = 0.0d0
+      means = abs( means2 - means1 )
+      do k = 1, p
+        eps = eps + sum(means(:,k))**2
+      end do
+      eps = sqrt(eps)
+      return
+    end function means_residuals
+
+  end function mbkmeans2
 
 !=======================================================================
 ! mean
@@ -5259,6 +6144,29 @@ contains
     end do
     return
   end subroutine meshgrid2
+
+!=======================================================================
+! mpi_rpre
+!-----------------------------------------------------------------------
+! mpi_rpre returns either MPI_REAL or MPI_DOUBLE depending on RPRE.
+!
+! Notes
+!-----------------------------------------------------------------------
+! When calling MPI functions, use mpi_rpre instead of MPI_REAL or
+! MPI_DOUBLE.
+!=======================================================================
+
+#ifdef do_mpi
+  integer(kind = 4) function mpi_rpre()
+    select case(RPRE)
+    case(4)
+      mpi_rpre = mpi_real
+    case(8)
+      mpi_rpre = mpi_double
+    end select
+    return
+  end function mpi_rpre
+#endif
 
 !=======================================================================
 ! nextpow2
@@ -5588,14 +6496,14 @@ contains
 !
 ! Syntax
 !-----------------------------------------------------------------------
-! call ofile%open()
-! call ofile%open(r)
+! call ofile % open()
+! call ofile % open(r)
 !
 ! Description
 !-----------------------------------------------------------------------
-! call ofile%open() open the File object ofile with sequential access.
+! call ofile % open() open the File object ofile with sequential access.
 !
-! call ofile%open(r) open the File object ofile with direct access,
+! call ofile % open(r) open the File object ofile with direct access,
 ! where r is the record length.
 !=======================================================================
 
@@ -5603,10 +6511,10 @@ contains
     class(File), intent(inout) :: self
     integer(kind = IPRE) :: ierr
 
-    open(unit = self%unit, file = self%filename, access = "sequential", &
+    open(unit = self % unit, file = self % filename, access = "sequential", &
       form = "formatted", status = "unknown", iostat = ierr)
-    if (ierr .ne. 0) then
-      print *, "Error: Cannot read "//self%filename//" ."
+    if ( ierr .ne. 0 ) then
+      print *, "Error: cannot read '" // trim(self % filename) // "'"
       stop
     end if
     return
@@ -5617,14 +6525,39 @@ contains
     integer(kind = IPRE), intent(in) :: r
     integer(kind = IPRE) :: ierr
 
-    open(unit = self%unit, file = self%filename, access = "direct", &
+    open(unit = self % unit, file = self % filename, access = "direct", &
       form = "unformatted", status = "unknown", recl = r, iostat = ierr)
-    if (ierr .ne. 0) then
-      print *, "Error: Cannot read "//self%filename//" ."
+    if ( ierr .ne. 0 ) then
+      print *, "Error: cannot read '" // trim(self % filename) // "'"
       stop
     end if
     return
   end subroutine open2
+
+!=======================================================================
+! outer
+!-----------------------------------------------------------------------
+! outer computes the outer product of two vectors.
+!
+! Syntax
+!-----------------------------------------------------------------------
+! A = outer(x, y)
+!
+! Description
+!-----------------------------------------------------------------------
+! A = outer(x, y) returns the outer product of vectors x and y.
+!=======================================================================
+
+  function outer(x, y) result(A)
+    real(kind = RPRE), dimension(:,:), allocatable :: A
+    real(kind = RPRE), dimension(:), intent(in) :: x, y
+    integer(kind = IPRE) :: m, n
+
+    m = size(x)
+    n = size(y)
+    A = spread(x, 2, n) * spread(y, 1, m)
+    return
+  end function outer
 
 !=======================================================================
 ! pascal
@@ -5717,6 +6650,89 @@ contains
     end do
     return
   end function prctile1
+
+!=======================================================================
+! progress_bar
+!-----------------------------------------------------------------------
+! Display a progression bar.
+!
+! Syntax
+!-----------------------------------------------------------------------
+! call progress_bar(iter, itermax, step)
+!
+! Description
+!-----------------------------------------------------------------------
+! call progress_bar(iter, itermax, step) displays a progress bar given
+! the current iteration iter, the maximum number of iterations itermax,
+! and the length of the bar steps.
+!=======================================================================
+
+  subroutine progress_bar(iter, itermax, step)
+    integer(kind = IPRE), intent(in) :: iter, itermax
+    integer(kind = IPRE), intent(in), optional :: step
+    integer(kind = IPRE) :: i, perc, opt_step
+    character(len = :), allocatable :: bar
+
+    opt_step = 50
+    if ( present(step) ) opt_step = step
+
+    ! Initialize the bar
+    bar = "  ["
+    do i = 1, opt_step
+      bar = bar // " "
+    end do
+    bar = bar // "]"
+
+    ! Compute the percentage
+    perc = real(iter) / real(itermax) * 100.
+
+    ! Fill the bar
+    do i = 1, floor( perc/(100./opt_step) )
+      bar(3+i:3+i) = "="
+    end do
+
+    ! Place the percentage
+    i = ceiling( (opt_step+2)/2. )
+    write(bar(i+1:i+3), "(I3)") perc
+    bar(i+4:i+4) = "%"
+
+    ! Fill the space
+    if (perc .lt. 100 .and. perc .gt. 50-100/opt_step) bar(i+1:i+1) = "="
+
+    ! Return to the beginning of the line and display the bar
+    write(*, "(A1, A)", advance = "no") char(13), bar
+    return
+  end subroutine progress_bar
+
+!=======================================================================
+! progress_perc
+!-----------------------------------------------------------------------
+! Display a progression percentage.
+!
+! Syntax
+!-----------------------------------------------------------------------
+! call progress_perc(iter, itermax, prefix)
+!
+! Description
+!-----------------------------------------------------------------------
+! call progress_perc(iter, itermax, prefix) displays a percentage given
+! the current iteration iter, the maximum number of iterations itermax,
+! and a prefix.
+!=======================================================================
+
+  subroutine progress_perc(iter, itermax, prefix)
+    integer(kind = IPRE), intent(in) :: iter, itermax
+    character(len = *), intent(in), optional :: prefix
+    real(kind = RPRE) :: perc
+    character(len = :), allocatable :: opt_prefix
+
+    opt_prefix = ""
+    if ( present(prefix) ) opt_prefix = prefix
+
+    perc = real(iter) / real(itermax) * 100.
+    write(*, "(A1, A, F6.2, A)", advance = "no") char(13), opt_prefix, perc, "%"
+    return
+  end subroutine progress_perc
 
 !=======================================================================
 ! rng
@@ -6480,6 +7496,146 @@ contains
   end function signum2
 
 !=======================================================================
+! silhouette
+!-----------------------------------------------------------------------
+! silhouette computes the silhouette values for every observations given
+! the clustering indices.
+!
+! Syntax
+!-----------------------------------------------------------------------
+! s = silhouette(x, cluster)
+! s = silhouette(X, cluster)
+!
+! Description
+!-----------------------------------------------------------------------
+! s = silhouette(x, cluster) returns the silhouette values for every
+! elements in the vector x.
+!
+! s = silhouette(X, cluster) returns the silhouette values for every
+! elements in the array X, each row being an observation and each
+! column a parameter.
+!
+! Notes
+!-----------------------------------------------------------------------
+! After Rousseeuw P. J. (1986): "Silhouettes: a graphical aid to the
+! interpretation and validation of cluster analysis".
+!=======================================================================
+
+  function silhouette1(x, cluster) result(s)
+    real(kind = RPRE), dimension(:), allocatable :: s
+    real(kind = RPRE), dimension(:), intent(in) :: x
+    integer(kind = IPRE), dimension(:), intent(in) :: cluster
+    integer(kind = IPRE) :: n
+    real(kind = RPRE), dimension(:,:), allocatable :: A
+
+    n = size(x)
+    A = reshape( x, shape = [ n, 1 ], order = [ 1, 2 ] )
+    s = silhouette2(A, cluster)
+    return
+  end function silhouette1
+
+  function silhouette2(X, cluster) result(s)
+    real(kind = RPRE), dimension(:), allocatable :: s
+    real(kind = RPRE), dimension(:,:), intent(in) :: X
+    integer(kind = IPRE), dimension(:), intent(in) :: cluster
+    integer(kind = IPRE) :: i, j, K, l, n
+    real(kind = RPRE) :: a, b
+    integer(kind = IPRE), dimension(:), allocatable :: idx, cs
+    real(kind = RPRE), dimension(:), allocatable :: d
+
+    n = size(X, 1)
+    K = maxval(cluster)
+    if ( K .eq. 1 ) then
+      print *, "Warning: in silhouette, the silhouette value cannot " &
+        // "be defined for K = 1."
+      s = zeros(n)
+      return
+    end if
+
+    ! Size of each cluster
+    !======================
+    allocate(cs(K))
+    do j = 1, K
+      idx = find( cluster .eq. j )    ! All objects in cluster j
+      cs(j) = size(idx)
+    end do
+
+    ! Loop over objects
+    !===================
+    s = zeros(n)
+    do i = 1, n
+
+      ! Compute the dissimilarity for each cluster to current object i
+      !================================================================
+      d = zeros(K)          ! Cluster dissimilarity to object i
+      do j = 1, K
+        idx = find( cluster .eq. j )
+        d(j) = sum( ( X(idx,:) - repmat(X(i,:), cs(j), 2) )**2 ) / cs(j)
+      end do
+
+      ! Compute a(i)
+      !==============
+      j = cluster(i)
+      if ( cs(j) .eq. 1 ) then
+        s(i) = 0.0d0
+        cycle               ! Skip next statements and begin next iteration
+      else
+        a = d(j) * cs(j) / ( cs(j) - 1 )
+      end if
+
+      ! Compute b(i)
+      !==============
+      b = minval(d, mask = d .ne. d(j) .and. d .ne. real(0., RPRE))
+
+      ! Compute s(i)
+      !==============
+      s(i) = (b - a) / max(a, b)
+
+    end do
+
+    return
+  end function silhouette2
+
+!=======================================================================
+! sinc
+!-----------------------------------------------------------------------
+! sinc computes sinc function defined as sinc(x) = sin(pi*x) / (pi*x),
+! with the convention sinc(0) = 1.
+!
+! Syntax
+!-----------------------------------------------------------------------
+! y = sinc(x)
+!
+! Description
+!-----------------------------------------------------------------------
+! y = sinc(x) returns the sinc function of the elements in x.
+!=======================================================================
+
+  real(kind = RPRE) function sinc0(x)
+    real(kind = RPRE), intent(in) :: x
+    real(kind = RPRE) :: y
+
+    if ( x .eq. 0.0d0 ) then
+      sinc0 = 1.0d0
+    else
+      y = pi * x
+      sinc0 = sin(y) / y
+    end if
+    return
+  end function sinc0
+
+  function sinc1(x)
+    real(kind = RPRE), dimension(:), allocatable :: sinc1
+    real(kind = RPRE), dimension(:), intent(in) :: x
+    real(kind = RPRE), dimension(:), allocatable :: y
+
+    allocate(y(size(x)))
+    y = pi * merge(real(1.0e-20, RPRE), x, x .eq. 0.0d0)
+    sinc1 = sin(y) / y
+    return
+  end function sinc1
+
+!=======================================================================
 ! sind
 !-----------------------------------------------------------------------
 ! sind computes the sine of argument in degrees.
@@ -6811,7 +7967,7 @@ contains
   function spline1_1(x, y, xq) result(yq)
     real(kind = RPRE), dimension(:), allocatable :: yq
     real(kind = RPRE), dimension(:), intent(in) :: x, y, xq
-    integer(kind = IPRE) :: i, n, nq, x1(1)
+    integer(kind = IPRE) :: i, n, nq, x1
     real(kind = RPRE), dimension(:), allocatable :: w, h, z, a, b, c, d
 
     n = size(x)
@@ -6845,11 +8001,11 @@ contains
     ! Evaluate
     !==========
     do i = 1, nq
-      x1 = max(1, minloc(xq(i) - x, mask = xq(i) .gt. x))
-      yq(i) = d(x1(1)) + ( xq(i) - x(x1(1)) ) &
-              * ( c(x1(1)) + ( xq(i) - x(x1(1)) ) &
-              * ( b(x1(1)) + ( xq(i) - x(x1(1)) ) &
-              * a(x1(1)) ) )
+      x1 = max(1, minloc(xq(i) - x, 1, mask = xq(i) .gt. x))
+      yq(i) = d(x1) + ( xq(i) - x(x1) ) &
+              * ( c(x1) + ( xq(i) - x(x1) ) &
+              * ( b(x1) + ( xq(i) - x(x1) ) &
+              * a(x1) ) )
     end do
     return
   end function spline1_1
@@ -6879,7 +8035,7 @@ contains
     real(kind = RPRE), dimension(:), allocatable :: zq
     real(kind = RPRE), dimension(:), intent(in) :: x, y, xq, yq
     real(kind = RPRE), dimension(:,:), intent(in) :: z
-    integer(kind = IPRE) :: i, iq, j, k, m, n, nq, x0(1), y0(1)
+    integer(kind = IPRE) :: i, iq, j, k, m, n, nq, x0, y0
     real(kind = RPRE) :: wt(16,16), zv(16), c(4,4), dx, dy, t, u
     real(kind = RPRE), dimension(:,:), allocatable :: zt, z1, z2, z12
 
@@ -6925,29 +8081,29 @@ contains
 
       ! Locate the query point
       !========================
-      x0 = minloc(xq(iq) - x, mask = xq(iq) .ge. x)
-      y0 = minloc(yq(iq) - y, mask = yq(iq) .ge. y)
-      dx = x(x0(1)+1) - x(x0(1))
-      dy = y(y0(1)+1) - y(y0(1))
+      x0 = minloc(xq(iq) - x, 1, mask = xq(iq) .ge. x)
+      y0 = minloc(yq(iq) - y, 1, mask = yq(iq) .ge. y)
+      dx = x(x0+1) - x(x0)
+      dy = y(y0+1) - y(y0)
 
       ! Build zv so that wt·zv = c, the cubic basis coefficients
       !==========================================================
-      zv = [ zt(x0(1),y0(1)), &
-             zt(x0(1)+1,y0(1)), &
-             zt(x0(1),y0(1)+1), &
-             zt(x0(1)+1,y0(1)+1), &
-             z1(x0(1),y0(1))*dx, &
-             z1(x0(1)+1,y0(1))*dx, &
-             z1(x0(1),y0(1)+1)*dx, &
-             z1(x0(1)+1,y0(1)+1)*dx, &
-             z2(x0(1),y0(1))*dy, &
-             z2(x0(1)+1,y0(1))*dy, &
-             z2(x0(1),y0(1)+1)*dy, &
-             z2(x0(1)+1,y0(1)+1)*dy, &
-             z12(x0(1),y0(1))*dx*dy, &
-             z12(x0(1)+1,y0(1))*dx*dy, &
-             z12(x0(1),y0(1)+1)*dx*dy, &
-             z12(x0(1)+1,y0(1)+1)*dx*dy ]
+      zv = [ zt(x0,y0), &
+             zt(x0+1,y0), &
+             zt(x0,y0+1), &
+             zt(x0+1,y0+1), &
+             z1(x0,y0)*dx, &
+             z1(x0+1,y0)*dx, &
+             z1(x0,y0+1)*dx, &
+             z1(x0+1,y0+1)*dx, &
+             z2(x0,y0)*dy, &
+             z2(x0+1,y0)*dy, &
+             z2(x0,y0+1)*dy, &
+             z2(x0+1,y0+1)*dy, &
+             z12(x0,y0)*dx*dy, &
+             z12(x0+1,y0)*dx*dy, &
+             z12(x0,y0+1)*dx*dy, &
+             z12(x0+1,y0+1)*dx*dy ]
 
       ! Solve for c
       !=============
@@ -6955,8 +8111,8 @@ contains
 
       ! Scaling coefficients so that 0 <= (t, u) <= 1
       !===============================================
-      t = ( xq(iq) - x(x0(1)) ) / dx
-      u = ( yq(iq) - y(y0(1)) ) / dy
+      t = ( xq(iq) - x(x0) ) / dx
+      u = ( yq(iq) - y(y0) ) / dy
 
       ! Evaluate at the query point
       !=============================
@@ -7074,6 +8230,47 @@ contains
   end function spline2_2
 
 !=======================================================================
+! split_argument
+!-----------------------------------------------------------------------
+! split_argument takes a command line argument of type 'argname=argval'
+! (obtained by get_command_argument) and returns argname and argval.
+!
+! Syntax
+!-----------------------------------------------------------------------
+! call split_argument(argin, argname, argval)
+!
+! Description
+!-----------------------------------------------------------------------
+! call split_argument(argin, argname, argval) splits argin into argname
+! and argval as strings.
+!
+! Examples
+!-----------------------------------------------------------------------
+! nargin = command_argument_count()
+! do i = 1, nargin
+!   call get_command_argument(i, argin)
+!   call split_argument(argin, argname, argval)
+!   print *, argname, argval
+! end do
+!=======================================================================
+
+  subroutine split_argument(argin, argname, argval)
+    character(len = *), intent(in) :: argin
+    character(len = :), allocatable, intent(out) :: argname, argval
+    integer(kind = IPRE) :: idx
+
+    idx = index(argin, "=")
+    if  (idx .ne. 0 ) then
+      argname = trim(argin(:idx-1))
+      argval = trim(argin(idx+1:))
+    else
+      print *, "Error: missing '=' in argument '" // trim(argin) // "'"
+      stop
+    end if
+    return
+  end subroutine split_argument
+
+!=======================================================================
 ! std
 !-----------------------------------------------------------------------
 ! std computes vector and matrix standard deviations.
@@ -7186,17 +8383,18 @@ contains
 ! This code is adapted from Numerical Recipes in Fortran 90.
 !=======================================================================
 
-  subroutine svd(a, w, u, v, ierr)
+  subroutine svd(a, w, u, v, d, ierr)
     real(kind = RPRE), dimension(:,:), intent(in) :: a
     real(kind = RPRE), dimension(:), allocatable, intent(out) :: w
     real(kind = RPRE), dimension(:,:), allocatable, intent(out), optional :: u, v
+    logical, intent(in), optional :: d
     integer(kind = IPRE), intent(out), optional :: ierr
     integer(kind = IPRE) :: m, n, i, its, i1, j, k, kk, k1, l, ll, l1, mn
     integer(kind = IPRE), dimension(:), allocatable :: idx
     real(kind = RPRE) :: c, f, g, h, s, scale, tst1, tst2, x, y, z
     real(kind = RPRE), dimension(:), allocatable :: rv1
     real(kind = RPRE), dimension(:,:), allocatable :: opt_u, opt_v
-    logical :: outu = .false., outv = .false., outierr = .false.
+    logical :: outu = .false., outv = .false., opt_d = .true., outierr = .false.
 
     m = size(a, 1)
     n = size(a, 2)
@@ -7206,6 +8404,7 @@ contains
 
     opt_u = a
 
+    if (present(d)) opt_d = d
     if (present(u)) outu = .true.
     if (present(v)) outv = .true.
     if (present(ierr)) outierr = .true.
@@ -7445,10 +8644,15 @@ contains
 
     ! Sort singular values
     !======================
-    idx = argsort(w, 2)
-    w = w(idx)
-    if (present(u)) u = opt_u(:,idx)
-    if (present(v)) v = opt_v(:,idx)
+    if ( opt_d ) then
+      idx = argsort(w, 2)
+      w = w(idx)
+      if (present(u)) u = opt_u(:,idx)
+      if (present(v)) v = opt_v(:,idx)
+    else
+      if (present(u)) u = opt_u
+      if (present(v)) v = opt_v
+    end if
 
     return
 
@@ -7610,7 +8814,7 @@ contains
 ! call tic()
 ! ! ... some codes ...
 ! call toc()
-!     Elapsed time: 0.1 seconds.
+!     Elapsed time: 0.1 seconds
 !=======================================================================
 
   subroutine tic()
@@ -7637,7 +8841,7 @@ contains
     else
       print *, "Elapsed time: " &
         // num2str(real(elapsed_time, kind = RPRE), "(F12.3)") &
-        // " seconds."
+        // " seconds"
     end if
     return
   end subroutine toc

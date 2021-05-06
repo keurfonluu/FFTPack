@@ -30,7 +30,7 @@ FC      :=  gfortran
 #FFLAGS  :=  -O3 -ffree-line-length-none
 #FFLAGS  :=  -O3 -ffree-line-length-none -Wall -Wextra -fbounds-check
 #FFLAGS  :=  -O3 -ffree-line-length-none -cpp -Ddo_mpi
-FFLAGS  :=  -O3 -ffast-math -march=native -funroll-loops -fno-protect-parens -flto -fcheck=all
+FFLAGS  :=  -O3 -cpp -ffast-math -march=native -funroll-loops -fno-protect-parens -flto -fcheck=all -fallow-argument-mismatch
 #
 # ======================================================================
 # Declarations of executables to be compiled and various dependances

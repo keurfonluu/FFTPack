@@ -1,0 +1,11 @@
+# objs
+*.o
+*.mod
+obj/
+
+# cache fortran codes
+*.f90_
+
+# output files
+*.exe
+*.bin
