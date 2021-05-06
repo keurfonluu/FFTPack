@@ -23,14 +23,16 @@ src_f90d2 = ./test/
 # obj files dir
 obj_dir = ./obj/example_fft/
 
-# exe file dir/name
+# exe/lib file dir/name
 exe_dir = ./bin/
 exe = example_fft
+lib_dir = ./bin/
+lib = fftpack
 
 # lib files
 idir = 
 ldir = 
-libs =
+libs = 
 
 # examples
 example_dir = ./example/
@@ -42,11 +44,13 @@ objs = $(addprefix $(obj_dir), $(obj_f90l1) $(obj_f90l2))
 # compiler tools
 fc = gcc
 ld = gfortran
-fflag = -o3 -cpp -ffast-math -march=native -funroll-loops -fno-protect-parens -flto -fcheck=all -fallow-argument-mismatch \
+ar = ar
+fflag = -o2 -cpp -ffast-math -march=native -funroll-loops -fno-protect-parens -flto -fcheck=all -fallow-argument-mismatch \
 -Wl, -J$(obj_dir) $(idir)
 lflag = 
 
 # targets
+.PHONY: all, clean, test
 all: $(exe)
 
 $(exe): $(obj_f90l1) $(obj_f90l2)
@@ -61,7 +65,13 @@ $(obj_f90l2):
 	@mkdir -p $(obj_dir)
 	$(fc) $(fflag) -c $(src_f90d2)$(@:.o=.f90) -o $(obj_dir)$@
 	
-.PHONY: clean, test
+$(lib): $(obj_f90l1)
+	@mkdir -p $(lib_dir)
+	$(ar) rcs $(lib_dir)lib$(lib).a $(objs)
+	$(ld) -shared -fpic $(objs) -o $(lib_dir)lib$(lib).dll.a
+	@mkdir -p $(lib_dir)include
+	@cp -f $(obj_dir)*.mod $(lib_dir)include
+	
 clean:
 	rm -f $(obj_dir)*.*
 	rm -f $(exe_dir)$(exe)

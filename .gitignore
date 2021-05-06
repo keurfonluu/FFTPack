@@ -2,9 +2,7 @@
 *.o
 *.mod
 obj/
-
-# cache fortran codes
-*.f90_
+bin/
 
 # output files
 *.exe
