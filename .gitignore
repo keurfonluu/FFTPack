@@ -3,6 +3,7 @@
 *.mod
 obj/
 bin/
+build/
 
 # output files
 *.exe

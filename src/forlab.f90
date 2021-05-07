@@ -17,10 +17,6 @@
 
 module forlab
 
-#ifdef do_mpi
-  use mpi
-#endif
-
   implicit none
 
 !=======================================================================
@@ -51,9 +47,7 @@ module forlab
     svd, svdsolve, std, spline1, spline2, skewness, signum, sinc, &
     split_argument, tand, tic, toc, trace, tril, triu, utm2deg, vertcat, &
     var, zeros, dbindex, gmm, kmeans, mbkmeans, silhouette
-#ifdef do_mpi
   public :: mpi_rpre
-#endif
 
 !=======================================================================
 ! Object File
@@ -6154,19 +6148,13 @@ end function loadtxt2
 !-----------------------------------------------------------------------
 ! When calling MPI functions, use mpi_rpre instead of MPI_REAL or
 ! MPI_DOUBLE.
+! https://linux.die.net/man/3/mpi_double
 !=======================================================================
 
-#ifdef do_mpi
   integer(kind = 4) function mpi_rpre()
-    select case(RPRE)
-    case(4)
-      mpi_rpre = mpi_real
-    case(8)
-      mpi_rpre = mpi_double
-    end select
+      mpi_rpre = RPRE
     return
   end function mpi_rpre
-#endif
 
 !=======================================================================
 ! nextpow2
