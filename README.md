@@ -43,8 +43,13 @@ in the "./bin" folder and header files in the "./bin/include" folder. That you c
 ### Requirements
 To build this library you need
 + gfortran
-+ [fpm](https://github.com/fortran-lang/fpm)
++ [fpm](https://github.com/fortran-lang/fpm)  
 
+To use fftpack within your fpm project, add the following to fpm.toml file:
+```bash
+[dependencies]
+fftpack = {git = "https://github.com/keurfonluu/FFTPack.git" }
+```
 ### Fpm build
 ```bash
 # gfortran version < 10
